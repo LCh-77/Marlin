@@ -29,6 +29,8 @@
 #if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
 
 #include "dwin.h"
+#include "dwinui.h"
+#include "dwin_defines.h"
 
 #include "../../marlinui.h"
 #include "../../../MarlinCore.h"
@@ -80,18 +82,21 @@
   #include "../../../feature/powerloss.h"
 #endif
 
+#if HAS_ESDIAG
+  #include "endstop_diag.h"
+#endif
+
+#if HAS_LOCKSCREEN
+  #include "lockscreen.h"
+#endif
+
 #define MACHINE_SIZE STRINGIFY(X_BED_SIZE) "x" STRINGIFY(Y_BED_SIZE) "x" STRINGIFY(Z_MAX_POS)
 
 #ifndef CORP_WEBSITE
    #define CORP_WEBSITE WEBSITE_URL
  #endif
 
-#define DWIN_FONT_MENU font8x16
-#define DWIN_FONT_STAT font10x20
-#define DWIN_FONT_HEAD font10x20
-
 #define MENU_CHAR_LIMIT  24
-#define STATUS_Y 352
 
 #define MAX_PRINT_SPEED   500
 #define MIN_PRINT_SPEED   10
@@ -124,14 +129,6 @@
   #define MAX_BED_TEMP  BED_MAXTEMP
   #define MIN_BED_TEMP  0
 #endif
-
-constexpr uint16_t TROWS = 6, MROWS = TROWS - 1,
-                   TITLE_HEIGHT = 30,
-                   MLINE = 53,
-                   LBLX = 60,
-                   MENU_CHR_W = 8, MENU_CHR_H = 16, STAT_CHR_W = 10;
-
-#define MBASE(L) (49 + MLINE * (L))
 
 constexpr float default_max_feedrate[]        = DEFAULT_MAX_FEEDRATE;
 constexpr float default_max_acceleration[]    = DEFAULT_MAX_ACCELERATION;
@@ -480,7 +477,7 @@ void _Decorate_Menu_Item(uint8_t row, uint8_t icon, bool more) {
 }
 
 void CrealityDWINClass::Draw_Menu_Item(uint8_t row, uint8_t icon/*=0*/, const char * label1, const char * label2, bool more/*=false*/, bool centered/*=false*/) {
-  const uint8_t label_offset_y = (label1 || label2) ? MENU_CHR_H * 3 / 5 : 0,
+  const uint8_t label_offset_y = (label1 && label2) ? MENU_CHR_H * 3 / 5 : 0,
                 label1_offset_x = !centered ? LBLX : LBLX * 4/5 + _MAX(LBLX * 1U/5, (DWIN_WIDTH - LBLX - (label1 ? strlen(label1) : 0) * MENU_CHR_W) / 2),
                 label2_offset_x = !centered ? LBLX : LBLX * 4/5 + _MAX(LBLX * 1U/5, (DWIN_WIDTH - LBLX - (label2 ? strlen(label2) : 0) * MENU_CHR_W) / 2);
   if (label1) DWIN_Draw_String(false, DWIN_FONT_MENU, Color_White, Color_Bg_Black, label1_offset_x, MBASE(row) - 1 - label_offset_y, label1); // Draw Label
@@ -489,7 +486,7 @@ void CrealityDWINClass::Draw_Menu_Item(uint8_t row, uint8_t icon/*=0*/, const ch
 }
 
 void CrealityDWINClass::Draw_Menu_Item(uint8_t row, uint8_t icon/*=0*/, FSTR_P const flabel1, FSTR_P const flabel2, bool more/*=false*/, bool centered/*=false*/) {
-  const uint8_t label_offset_y = (flabel1 || flabel2) ? MENU_CHR_H * 3 / 5 : 0,
+  const uint8_t label_offset_y = (flabel1 && flabel2) ? MENU_CHR_H * 3 / 5 : 0,
                 label1_offset_x = !centered ? LBLX : LBLX * 4/5 + _MAX(LBLX * 1U/5, (DWIN_WIDTH - LBLX - (flabel1 ? strlen_P(FTOP(flabel1)) : 0) * MENU_CHR_W) / 2),
                 label2_offset_x = !centered ? LBLX : LBLX * 4/5 + _MAX(LBLX * 1U/5, (DWIN_WIDTH - LBLX - (flabel2 ? strlen_P(FTOP(flabel2)) : 0) * MENU_CHR_W) / 2);
   if (flabel1) DWIN_Draw_String(false, DWIN_FONT_MENU, Color_White, Color_Bg_Black, label1_offset_x, MBASE(row) - 1 - label_offset_y, flabel1); // Draw Label
@@ -2839,7 +2836,9 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define ADVANCED_FILSENSORENABLED (ADVANCED_COLD_EXTRUDE + ENABLED(FILAMENT_RUNOUT_SENSOR))
       #define ADVANCED_FILSENSORDISTANCE (ADVANCED_FILSENSORENABLED + ENABLED(HAS_FILAMENT_RUNOUT_DISTANCE))
       #define ADVANCED_POWER_LOSS (ADVANCED_FILSENSORDISTANCE + ENABLED(POWER_LOSS_RECOVERY))
-      #define ADVANCED_TOTAL ADVANCED_POWER_LOSS
+      #define ADVANCED_ESDIAG (ADVANCED_POWER_LOSS + ENABLED(HAS_ESDIAG))
+      #define ADVANCED_LOCKSCREEN (ADVANCED_ESDIAG + ENABLED(HAS_LOCKSCREEN))
+      #define ADVANCED_TOTAL ADVANCED_LOCKSCREEN
 
       switch (item) {
         case ADVANCED_BACK:
@@ -2958,6 +2957,24 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
               Draw_Checkbox(row, recovery.enabled);
             }
             break;
+        #endif
+        #if HAS_ESDIAG
+          case ADVANCED_ESDIAG:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_ESDiag, F("End-stops diagnostic"));
+            }
+            else 
+              DWIN_EndstopsDiag();
+            break;
+        #endif
+        #if HAS_LOCKSCREEN
+          case ADVANCED_LOCKSCREEN:
+            if (draw) 
+                Draw_Menu_Item(row, ICON_Lock, GET_TEXT_F(MSG_LOCKSCREEN));
+            else 
+                DWIN_LockScreen();
+            break;
+
         #endif
       }
       break;
@@ -3732,7 +3749,8 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define TUNE_FILSENSORENABLED (TUNE_CHANGEFIL + ENABLED(FILAMENT_RUNOUT_SENSOR))
       #define TUNE_BACKLIGHT_OFF (TUNE_FILSENSORENABLED + 1)
       #define TUNE_BACKLIGHT (TUNE_BACKLIGHT_OFF + 1)
-      #define TUNE_TOTAL TUNE_BACKLIGHT
+      #define TUNE_LOCKSCREEN (TUNE_BACKLIGHT + ENABLED(HAS_LOCKSCREEN))
+      #define TUNE_TOTAL TUNE_LOCKSCREEN
 
       switch (item) {
         case TUNE_BACK:
@@ -3856,6 +3874,14 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
           else
             Modify_Value(ui.brightness, LCD_BRIGHTNESS_MIN, LCD_BRIGHTNESS_MAX, 1, ui.refresh_brightness);
           break;
+        #if HAS_LOCKSCREEN
+          case TUNE_LOCKSCREEN:
+            if (draw) 
+                Draw_Menu_Item(row, ICON_Lock, GET_TEXT_F(MSG_LOCKSCREEN));
+            else 
+                DWIN_LockScreen();
+            break;
+        #endif
       }
       break;
 
@@ -4628,6 +4654,12 @@ void CrealityDWINClass::Confirm_Control() {
         Popup_Handler(Heating);
         wait_for_user = false;
         break;
+      #if HAS_ESDIAG
+        case ESDiagPopup:
+          wait_for_user = false;
+          Redraw_Menu(true, true, false);
+          break;  
+      #endif
       default:
         Redraw_Menu(true, true, false);
         wait_for_user = false;
@@ -4757,6 +4789,9 @@ void CrealityDWINClass::Update() {
     case Print:   Print_Screen_Control(); break;
     case Popup:   Popup_Control();        break;
     case Confirm: Confirm_Control();      break;
+    #if HAS_LOCKSCREEN
+      case Locked: HMI_LockScreen();      break;
+    #endif
   }
 }
 
@@ -4810,6 +4845,7 @@ void CrealityDWINClass::Screen_Update() {
   if (ELAPSED(ms, statustime)) {
     statustime = ms + 500;
     Draw_Status_Area();
+    if (process == Confirm && popup == ESDiagPopup) ESDiag.Update();
   }
 
   static millis_t printtime = 0;
@@ -5007,6 +5043,40 @@ void MarlinUI::init_lcd() {
       case PAUSE_MESSAGE_WAITING: CrealityDWIN.Draw_Print_Screen();         break;
       default: break;
     }
+  }
+#endif
+
+#if HAS_ESDIAG
+  void CrealityDWINClass::DWIN_EndstopsDiag() {
+    last_process = process;
+    last_selection = selection;
+    process = Confirm;
+    popup = ESDiagPopup;
+    ESDiag.Draw();
+  }
+#endif
+
+#if HAS_LOCKSCREEN
+  void CrealityDWINClass::DWIN_LockScreen() {
+    if (process != Locked) {
+      lockScreen.rprocess = process;
+      process = Locked;
+      lockScreen.init();
+    }
+  }
+
+  void CrealityDWINClass::DWIN_UnLockScreen() {
+    if (process == Locked) {
+      process = lockScreen.rprocess;
+      if (!printing) Draw_Main_Menu(); else Draw_Print_Screen();
+    }
+  }
+
+  void CrealityDWINClass::HMI_LockScreen() {
+    EncoderState encoder_diffState = Encoder_ReceiveAnalyze();
+    if (encoder_diffState == ENCODER_DIFF_NO) return;
+    lockScreen.onEncoder(encoder_diffState);
+    if (lockScreen.isUnlocked()) DWIN_UnLockScreen();
   }
 #endif
 

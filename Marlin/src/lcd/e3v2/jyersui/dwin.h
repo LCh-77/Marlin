@@ -34,16 +34,15 @@
 
 #include "../../../inc/MarlinConfigPre.h"
 
-//#define DWIN_CREALITY_LCD_CUSTOM_ICONS
-
 enum processID : uint8_t {
-  Main, Print, Menu, Value, Option, File, Popup, Confirm, Wait
+  Main, Print, Menu, Value, Option, File, Popup, Confirm, Wait, Locked
 };
 
 enum PopupID : uint8_t {
   Pause, Stop, Resume, SaveLevel, ETemp, ConfFilChange, PurgeMore, MeshSlot,
   Level, Home, MoveWait, Heating,  FilLoad, FilChange, TempWarn, Runout, PIDWait, Resuming, ManualProbing,
-  FilInsert, HeaterTime, UserInput, LevelError, InvalidMesh, UI, Complete
+  FilInsert, HeaterTime, UserInput, LevelError, InvalidMesh, UI, Complete,
+  ESDiagPopup
 };
 
 enum menuID : uint8_t {
@@ -88,61 +87,10 @@ enum menuID : uint8_t {
   PreheatHotend
 };
 
-// Custom icons
-#if ENABLED(DWIN_CREALITY_LCD_CUSTOM_ICONS)
-  // index of every custom icon should be >= CUSTOM_ICON_START
-  #define CUSTOM_ICON_START         ICON_Checkbox_F
-  #define ICON_Checkbox_F           200
-  #define ICON_Checkbox_T           201
-  #define ICON_Fade                 202
-  #define ICON_Mesh                 203
-  #define ICON_Tilt                 204
-  #define ICON_Brightness           205
-  #define ICON_AxisD                249
-  #define ICON_AxisBR               250
-  #define ICON_AxisTR               251
-  #define ICON_AxisBL               252
-  #define ICON_AxisTL               253
-  #define ICON_AxisC                254
-#else
-  #define ICON_Fade                 ICON_Version
-  #define ICON_Mesh                 ICON_Version
-  #define ICON_Tilt                 ICON_Version
-  #define ICON_Brightness           ICON_Version
-  #define ICON_AxisD                ICON_Axis
-  #define ICON_AxisBR               ICON_Axis
-  #define ICON_AxisTR               ICON_Axis
-  #define ICON_AxisBL               ICON_Axis
-  #define ICON_AxisTL               ICON_Axis
-  #define ICON_AxisC                ICON_Axis
-#endif
-
+#define Custom_Colors 10
 enum colorID : uint8_t {
   Default, White, Green, Cyan, Blue, Magenta, Red, Orange, Yellow, Brown, Black
 };
-
-#define Custom_Colors       10
-#define Color_Aqua          RGB(0x00,0x3F,0x1F)
-#define Color_Light_White   0xBDD7
-#define Color_Green         RGB(0x00,0x3F,0x00)
-#define Color_Light_Green   0x3460
-#define Color_Cyan          0x07FF
-#define Color_Light_Cyan    0x04F3
-#define Color_Blue          0x015F
-#define Color_Light_Blue    0x3A6A
-#define Color_Magenta       0xF81F
-#define Color_Light_Magenta 0x9813
-#define Color_Light_Red     0x8800
-#define Color_Orange        0xFA20
-#define Color_Light_Orange  0xFBC0
-#define Color_Light_Yellow  0x8BE0
-#define Color_Brown         0xCC27
-#define Color_Light_Brown   0x6204
-#define Color_Black         0x0000
-#define Color_Grey          0x18E3
-#define Check_Color         0x4E5C  // Check-box check color
-#define Confirm_Color       0x34B9
-#define Cancel_Color        0x3186
 
 class CrealityDWINClass {
 public:
@@ -240,6 +188,11 @@ public:
   static void Save_Settings(char *buff);
   static void Load_Settings(const char *buff);
   static void Reset_Settings();
+
+  static void DWIN_EndstopsDiag();
+  static void DWIN_LockScreen();
+  static void DWIN_UnLockScreen();
+  static void HMI_LockScreen();
 };
 
 extern CrealityDWINClass CrealityDWIN;
