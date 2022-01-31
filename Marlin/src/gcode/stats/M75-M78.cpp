@@ -33,6 +33,10 @@
   #include "../../lcd/e3v2/enhanced/dwin.h"
 #endif
 
+#if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
+  #include "../../lcd/e3v2/jyersui/dwin.h"
+#endif
+
 /**
  * M75: Start print timer
  */
@@ -41,6 +45,8 @@ void GcodeSuite::M75() {
   #if ENABLED(DWIN_CREALITY_LCD_ENHANCED)
     DWIN_Print_Header(parser.string_arg && parser.string_arg[0] ? parser.string_arg : GET_TEXT(MSG_HOST_START_PRINT));
     DWIN_Print_Started(false);
+  #elif ENABLED(DWIN_CREALITY_LCD_JYERSUI)
+    CrealityDWIN.Update_Print_Filename(parser.string_arg && parser.string_arg[0] ? parser.string_arg : GET_TEXT(MSG_HOST_START_PRINT));
   #endif
 }
 

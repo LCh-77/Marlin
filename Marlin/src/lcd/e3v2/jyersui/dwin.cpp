@@ -97,6 +97,7 @@
  #endif
 
 #define MENU_CHAR_LIMIT  24
+#define STATUS_CHAR_LIMIT  30
 
 #define MAX_PRINT_SPEED   500
 #define MIN_PRINT_SPEED   10
@@ -675,31 +676,31 @@ void CrealityDWINClass::Draw_Print_Filename(const bool reset/*=false*/) {
   static uint8_t namescrl = 0;
   if (reset) namescrl = 0;
   if (process == Print) {
-    constexpr int8_t maxlen = 30;
-    char *outstr = filename;
-    size_t slen = strlen(filename);
-    int8_t outlen = slen;
-    if (slen > maxlen) {
-      char dispname[maxlen + 1];
-      int8_t pos = slen - namescrl, len = maxlen;
+    size_t len = strlen(filename);
+    int8_t pos = len;
+    if (pos > STATUS_CHAR_LIMIT) {
+      pos -= namescrl;
+      len = _MIN((size_t)pos, (size_t)STATUS_CHAR_LIMIT);
+      char dispname[len + 1];
       if (pos >= 0) {
-        NOMORE(len, pos);
         LOOP_L_N(i, len) dispname[i] = filename[i + namescrl];
       }
       else {
-        const int8_t mp = maxlen + pos;
-        LOOP_L_N(i, mp) dispname[i] = ' ';
-        LOOP_S_L_N(i, mp, maxlen) dispname[i] = filename[i - mp];
-        if (mp <= 0) namescrl = 0;
+        LOOP_L_N(i, STATUS_CHAR_LIMIT + pos) dispname[i] = ' ';
+        LOOP_S_L_N(i, STATUS_CHAR_LIMIT + pos, STATUS_CHAR_LIMIT) dispname[i] = filename[i - (STATUS_CHAR_LIMIT + pos)];
       }
       dispname[len] = '\0';
-      outstr = dispname;
-      outlen = maxlen;
+      DWIN_Draw_Rectangle(1, Color_Bg_Black, 8, 50, DWIN_WIDTH - 8, 80);
+      const int8_t npos = (DWIN_WIDTH - STATUS_CHAR_LIMIT * MENU_CHR_W) / 2;
+      DWIN_Draw_String(false, DWIN_FONT_MENU, Color_White, Color_Bg_Black, npos, 60, dispname);
+      if (-pos >= STATUS_CHAR_LIMIT) namescrl = 0;
       namescrl++;
     }
-    DWIN_Draw_Rectangle(1, Color_Bg_Black, 8, 50, DWIN_WIDTH - 8, 80);
-    const int8_t npos = (DWIN_WIDTH - outlen * MENU_CHR_W) / 2;
-    DWIN_Draw_String(false, DWIN_FONT_MENU, Color_White, Color_Bg_Black, npos, 60, outstr);
+    else {
+        DWIN_Draw_Rectangle(1, Color_Bg_Black, 8, 50, DWIN_WIDTH - 8, 80);
+        const int8_t npos = (DWIN_WIDTH - strlen(filename) * MENU_CHR_W) / 2;
+        DWIN_Draw_String(false, DWIN_FONT_MENU, Color_White, Color_Bg_Black, npos, 60, filename);
+    }
   }
 }
 
@@ -1748,7 +1749,8 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define CONTROL_SAVE (CONTROL_ADVANCED + ENABLED(EEPROM_SETTINGS))
       #define CONTROL_RESTORE (CONTROL_SAVE + ENABLED(EEPROM_SETTINGS))
       #define CONTROL_RESET (CONTROL_RESTORE + ENABLED(EEPROM_SETTINGS))
-      #define CONTROL_INFO (CONTROL_RESET + 1)
+      #define CONTROL_REBOOT (CONTROL_RESET + 1)
+      #define CONTROL_INFO (CONTROL_REBOOT + 1)
       #define CONTROL_TOTAL CONTROL_INFO
 
       switch (item) {
@@ -1804,6 +1806,13 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             }
             break;
         #endif
+        case CONTROL_REBOOT:
+          if (draw)
+            Draw_Menu_Item(row, ICON_Reboot, F("Reboot printer"));
+          else {
+            RebootPrinter();
+          }
+          break;
         case CONTROL_INFO:
           if (draw)
             Draw_Menu_Item(row, ICON_Info, F("Info"));
@@ -2985,7 +2994,11 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         #define PROBE_BACK 0
         #define PROBE_XOFFSET (PROBE_BACK + 1)
         #define PROBE_YOFFSET (PROBE_XOFFSET + 1)
-        #define PROBE_TEST (PROBE_YOFFSET + 1)
+        #define PROBE_ZOFFSET (PROBE_YOFFSET + 1)
+        #define PROBE_ALARMR (PROBE_ZOFFSET + ENABLED(BLTOUCH))
+        #define PROBE_SELFTEST (PROBE_ALARMR + ENABLED(BLTOUCH))
+        #define PROBE_MOVEP (PROBE_SELFTEST + ENABLED(BLTOUCH))
+        #define PROBE_TEST (PROBE_MOVEP + 1)
         #define PROBE_TEST_COUNT (PROBE_TEST + 1)
         #define PROBE_TOTAL PROBE_TEST_COUNT
 
@@ -2998,39 +3011,79 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             else
               Draw_Menu(Advanced, ADVANCED_PROBE);
             break;
-
-            case PROBE_XOFFSET:
+          case PROBE_XOFFSET:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_StepX, F("Probe X Offset"));
+              Draw_Float(probe.offset.x, row, false, 10);
+            }
+            else
+              Modify_Value(probe.offset.x, -MAX_XY_OFFSET, MAX_XY_OFFSET, 10);
+            break;
+          case PROBE_YOFFSET:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_StepY, F("Probe Y Offset"));
+              Draw_Float(probe.offset.y, row, false, 10);
+            }
+            else
+              Modify_Value(probe.offset.y, -MAX_XY_OFFSET, MAX_XY_OFFSET, 10);
+            break;
+          case PROBE_ZOFFSET:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_StepZ, F("Probe Z Offset"));
+              Draw_Float(probe.offset.z, row, false, 100);
+            }
+            else
+              Modify_Value(probe.offset.z, MIN_Z_OFFSET, MAX_Z_OFFSET, 100);
+            break;
+          #if ENABLED(BLTOUCH)
+            case PROBE_ALARMR:
               if (draw) {
-                Draw_Menu_Item(row, ICON_StepX, F("Probe X Offset"));
-                Draw_Float(probe.offset.x, row, false, 10);
+              Draw_Menu_Item(row, ICON_ProbeAlarm, GET_TEXT_F(MSG_BLTOUCH_RESET));
               }
-              else
-                Modify_Value(probe.offset.x, -MAX_XY_OFFSET, MAX_XY_OFFSET, 10);
-              break;
-            case PROBE_YOFFSET:
-              if (draw) {
-                Draw_Menu_Item(row, ICON_StepY, F("Probe Y Offset"));
-                Draw_Float(probe.offset.y, row, false, 10);
-              }
-              else
-                Modify_Value(probe.offset.y, -MAX_XY_OFFSET, MAX_XY_OFFSET, 10);
-              break;
-            case PROBE_TEST:
-              if (draw)
-                Draw_Menu_Item(row, ICON_StepY, F("M48 Probe Test"));
               else {
-                sprintf_P(cmd, PSTR("G28O\nM48 X%s Y%s P%i"), dtostrf((X_BED_SIZE + X_MIN_POS) / 2.0f, 1, 3, str_1), dtostrf((Y_BED_SIZE + Y_MIN_POS) / 2.0f, 1, 3, str_2), testcount);
-                gcode.process_subcommands_now(cmd);
+                gcode.process_subcommands_now(F("M280 P0 S160"));
+                AudioFeedback();
               }
               break;
-            case PROBE_TEST_COUNT:
+            case PROBE_SELFTEST:
               if (draw) {
-                Draw_Menu_Item(row, ICON_StepY, F("Probe Test Count"));
-                Draw_Float(testcount, row, false, 1);
+                Draw_Menu_Item(row, ICON_ProbeSelfTest, GET_TEXT_F(MSG_BLTOUCH_SELFTEST));
               }
-              else
-                Modify_Value(testcount, 4, 50, 1);
+              else {
+                gcode.process_subcommands_now(F("M280 P0 S120\nG4 P1000\nM280 P0 S160"));
+                planner.synchronize();
+                AudioFeedback();
+              }
               break;
+            case PROBE_MOVEP:
+              if (draw) {
+                Draw_Menu_Item(row, ICON_ProbeDeploy, GET_TEXT_F(MSG_BLTOUCH_DEPLOY));
+                Draw_Checkbox(row, probe_deployed);
+              }
+              else {
+                probe_deployed = !probe_deployed;
+                if (probe_deployed == true)  gcode.process_subcommands_now(F("M280 P0 S10"));
+                else  gcode.process_subcommands_now(F("M280 P0 S90"));
+                Draw_Checkbox(row, probe_deployed);
+              }
+              break;
+          #endif
+          case PROBE_TEST:
+            if (draw)
+              Draw_Menu_Item(row, ICON_ProbeTest, F("M48 Probe Test"));
+            else {
+              sprintf_P(cmd, PSTR("G28O\nM48 X%s Y%s P%i"), dtostrf((X_BED_SIZE + X_MIN_POS) / 2.0f, 1, 3, str_1), dtostrf((Y_BED_SIZE + Y_MIN_POS) / 2.0f, 1, 3, str_2), testcount);
+              gcode.process_subcommands_now(cmd);
+            }
+            break;
+          case PROBE_TEST_COUNT:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_ProbeTestCount, F("Probe Test Count"));
+              Draw_Float(testcount, row, false, 1);
+            }
+            else
+              Modify_Value(testcount, 4, 50, 1);
+            break;
         }
         break;
     #endif
@@ -4730,19 +4783,15 @@ void CrealityDWINClass::Modify_Option(uint8_t value, const char * const * option
 
 /* Main Functions */
 
+void CrealityDWINClass::Update_Print_Filename(const char * const text) {
+  LOOP_L_N(i, _MIN((size_t)LONG_FILENAME_LENGTH, strlen(text))) filename[i] = text[i];
+  filename[_MIN((size_t)LONG_FILENAME_LENGTH - 1, strlen(text))] = '\0';
+  Draw_Print_Filename(true);
+}
+
 void CrealityDWINClass::Update_Status(const char * const text) {
-  char header[4];
-  LOOP_L_N(i, 3) header[i] = text[i];
-  header[3] = '\0';
-  if (strcmp_P(header, PSTR("<F>")) == 0) {
-    LOOP_L_N(i, _MIN((size_t)LONG_FILENAME_LENGTH, strlen(text))) filename[i] = text[i + 3];
-    filename[_MIN((size_t)LONG_FILENAME_LENGTH - 1, strlen(text))] = '\0';
-    Draw_Print_Filename(true);
-  }
-  else {
-    LOOP_L_N(i, _MIN((size_t)64, strlen(text))) statusmsg[i] = text[i];
-    statusmsg[_MIN((size_t)64, strlen(text))] = '\0';
-  }
+  LOOP_L_N(i, _MIN((size_t)64, strlen(text))) statusmsg[i] = text[i];
+  statusmsg[_MIN((size_t)64, strlen(text))] = '\0';
 }
 
 void CrealityDWINClass::Start_Print(bool sd) {
@@ -4760,8 +4809,6 @@ void CrealityDWINClass::Start_Print(bool sd) {
       #endif
       strcpy_P(filename, card.longest_filename());
     }
-    else
-      strcpy_P(filename, "Host Print");
     TERN_(LCD_SET_PROGRESS_MANUALLY, ui.set_progress(0));
     TERN_(USE_M73_REMAINING_TIME, ui.set_remaining_time(0));
     Draw_Print_Screen();
@@ -4775,6 +4822,7 @@ void CrealityDWINClass::Stop_Print() {
   TERN_(LCD_SET_PROGRESS_MANUALLY, ui.set_progress(100 * (PROGRESS_SCALE)));
   TERN_(USE_M73_REMAINING_TIME, ui.set_remaining_time(0));
   Draw_Print_confirm();
+  filename[0] = '\0';
 }
 
 void CrealityDWINClass::Update() {
@@ -5046,6 +5094,7 @@ void MarlinUI::init_lcd() {
   }
 #endif
 
+// End-stops diagnostic from DWIN UI Enhanced
 #if HAS_ESDIAG
   void CrealityDWINClass::DWIN_EndstopsDiag() {
     last_process = process;
@@ -5056,6 +5105,7 @@ void MarlinUI::init_lcd() {
   }
 #endif
 
+// Lock screen from DWIN UI Enhanced
 #if HAS_LOCKSCREEN
   void CrealityDWINClass::DWIN_LockScreen() {
     if (process != Locked) {
@@ -5079,5 +5129,23 @@ void MarlinUI::init_lcd() {
     if (lockScreen.isUnlocked()) DWIN_UnLockScreen();
   }
 #endif
+
+// Reboot screen from DWIN UI Enhanced
+void DWIN_RebootScreen() {
+  DWIN_Frame_Clear(Color_Bg_Black);
+  DWIN_JPG_ShowAndCache(0);
+  DWINUI::Draw_CenteredString(Color_White, 220, GET_TEXT_F(MSG_PLEASE_WAIT_REBOOT));
+  DWIN_UpdateLCD();
+  delay(500);
+}
+
+// Reboot Printer from DWIN UI Enhanced
+void CrealityDWINClass::RebootPrinter() {
+  wait_for_heatup = wait_for_user = false;    // Stop waiting for heating/user
+  thermalManager.disable_all_heaters();
+  planner.finish_and_disable();
+  DWIN_RebootScreen();
+  HAL_reboot();
+}
 
 #endif // DWIN_CREALITY_LCD_JYERSUI

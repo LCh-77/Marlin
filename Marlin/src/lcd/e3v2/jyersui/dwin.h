@@ -193,6 +193,8 @@ public:
   static void DWIN_LockScreen();
   static void DWIN_UnLockScreen();
   static void HMI_LockScreen();
+  static void RebootPrinter();
+  static void Update_Print_Filename(const char * const text);
 };
 
 extern CrealityDWINClass CrealityDWIN;

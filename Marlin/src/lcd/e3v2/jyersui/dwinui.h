@@ -65,6 +65,12 @@
   #define ICON_AxisC                ICON_Axis
   #define ICON_ESDiag               ICON_Info
   #define ICON_Lock                 ICON_Cool
+  #define ICON_Reboot               ICON_ResumeEEPROM
+  #define ICON_ProbeAlarm           ICON_SetEndTemp
+  #define ICON_ProbeSelfTest        ICON_SetEndTemp
+  #define ICON_ProbeDeploy          ICON_SetEndTemp
+  #define ICON_ProbeTest            ICON_SetEndTemp
+  #define ICON_ProbeTestCount       ICON_SetEndTemp
 #endif
 
 // Extended UI Colors
