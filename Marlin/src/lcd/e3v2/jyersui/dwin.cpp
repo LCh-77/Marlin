@@ -92,9 +92,15 @@
 
 #define MACHINE_SIZE STRINGIFY(X_BED_SIZE) "x" STRINGIFY(Y_BED_SIZE) "x" STRINGIFY(Z_MAX_POS)
 
+<<<<<<< HEAD
 #ifndef CORP_WEBSITE
    #define CORP_WEBSITE WEBSITE_URL
  #endif
+=======
+#define DWIN_FONT_MENU font8x16
+#define DWIN_FONT_STAT font10x20
+#define DWIN_FONT_HEAD font10x20
+>>>>>>> 0564cb188f (🚸 Enhanced UI => Professional UI - with updates (#23624))
 
 #define MENU_CHAR_LIMIT  24
 #define STATUS_CHAR_LIMIT  30
