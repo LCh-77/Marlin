@@ -71,6 +71,11 @@
   #define ICON_ProbeDeploy          ICON_SetEndTemp
   #define ICON_ProbeTest            ICON_SetEndTemp
   #define ICON_ProbeTestCount       ICON_SetEndTemp
+  #define ICON_FWRetLength          ICON_StepE
+  #define ICON_FWRetSpeed           ICON_Setspeed
+  #define ICON_FWRetZRaise          ICON_MoveZ
+  #define ICON_FWRecExtLength       ICON_StepE
+  #define ICON_FWRecSpeed           ICON_Setspeed
 #endif
 
 // Extended UI Colors

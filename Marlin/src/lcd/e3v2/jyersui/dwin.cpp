@@ -22,6 +22,11 @@
 
 /**
  * lcd/e3v2/jyersui/dwin.cpp
+ * JYERSUI Author: Jacob Myers
+ *
+ * JYERSUI Enhanced by LCH-77
+ * Version: 1.2
+ * Date: Feb 12, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
@@ -92,16 +97,6 @@
 
 #define MACHINE_SIZE STRINGIFY(X_BED_SIZE) "x" STRINGIFY(Y_BED_SIZE) "x" STRINGIFY(Z_MAX_POS)
 
-<<<<<<< HEAD
-#ifndef CORP_WEBSITE
-   #define CORP_WEBSITE WEBSITE_URL
- #endif
-=======
-#define DWIN_FONT_MENU font8x16
-#define DWIN_FONT_STAT font10x20
-#define DWIN_FONT_HEAD font10x20
->>>>>>> 0564cb188f (🚸 Enhanced UI => Professional UI - with updates (#23624))
-
 #define MENU_CHAR_LIMIT  24
 #define STATUS_CHAR_LIMIT  30
 
@@ -158,10 +153,13 @@ enum SelectItem : uint8_t {
 };
 
 uint8_t active_menu = MainMenu, last_menu = MainMenu;
-uint8_t selection = 0, last_selection = 0;
+uint8_t selection = 0, last_selection = 0, last_pos_selection = 0;
 uint8_t scrollpos = 0;
 uint8_t process = Main, last_process = Main;
 PopupID popup, last_popup;
+
+bool flag_tune = false;
+bool Auto_FW_Retract = false;
 
 void (*funcpointer)() = nullptr;
 void *valuepointer = nullptr;
@@ -183,6 +181,7 @@ int16_t pausetemp, pausebed, pausefan;
 bool livemove = false;
 bool liveadjust = false;
 uint8_t preheatmode = 0;
+uint8_t zoffsetmode = 0;
 float zoffsetvalue = 0;
 uint8_t gridpoint;
 float corner_avg;
@@ -399,6 +398,7 @@ CrealityDWINClass CrealityDWIN;
 struct CrealityDWINClass::EEPROM_Settings CrealityDWINClass::eeprom_settings{0};
 constexpr const char * const CrealityDWINClass::color_names[11];
 constexpr const char * const CrealityDWINClass::preheat_modes[3];
+constexpr const char * const CrealityDWINClass::zoffset_modes[3];
 
 // Clear a part of the screen
 //  4=Entire screen
@@ -865,11 +865,28 @@ void CrealityDWINClass::Draw_Status_Area(bool icons/*=false*/) {
   #if HAS_ZOFFSET_ITEM
     static float offset = -1;
 
-    if (icons) {
-      offset = -1;
-      DWIN_ICON_Show(ICON, ICON_Zoffset, 187, 416);
-    }
-    if (zoffsetvalue != offset) {
+    #if HAS_MESH
+      static bool _leveling_active = false;
+      static bool _printing_leveling_active = false;
+      if (printingIsActive()) {
+        _printing_leveling_active = ((planner.leveling_active && planner.leveling_active_at_z(current_position.z)) || _printing_leveling_active );   
+        if ((_printing_leveling_active = (planner.leveling_active && planner.leveling_active_at_z(current_position.z)) && ui.get_blink()))
+          DWIN_Draw_Rectangle(1, Line_Color, 186, 415, 205, 436);
+        else 
+          DWIN_Draw_Rectangle(1, Color_Bg_Black, 186, 415, 205, 436);
+      }
+      else {
+        _leveling_active = (planner.leveling_active || _leveling_active);
+        if ((_leveling_active = planner.leveling_active && ui.get_blink()))
+          DWIN_Draw_Rectangle(1, Line_Color, 186, 415, 205, 436);
+        else 
+          DWIN_Draw_Rectangle(1, Color_Bg_Black, 186, 415, 205, 436);
+      }  
+      DWIN_ICON_Show(false, false, true, ICON, ICON_Zoffset, 187, 416);
+    #else
+      if (icons) DWIN_ICON_Show(ICON, ICON_Zoffset, 187, 416);
+    #endif
+    if (zoffsetvalue != offset || icons) {
       offset = zoffsetvalue;
       DWIN_Draw_FloatValue(true, true, 0, DWIN_FONT_STAT, GetColor(eeprom_settings.status_area_text, Color_White), Color_Bg_Black, 2, 2, 207, 417, (zoffsetvalue < 0 ? -zoffsetvalue : zoffsetvalue));
       DWIN_Draw_String(true, DWIN_FONT_MENU, GetColor(eeprom_settings.status_area_text, Color_White), Color_Bg_Black, 205, 419, zoffsetvalue < 0 ? F("-") : F(" "));
@@ -1491,7 +1508,10 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             if (draw)
               Draw_Menu_Item(row, ICON_Back, F("Back"));
             else {
-              liveadjust = false;
+              zoffsetmode = 0;
+              #if !HAS_BED_PROBE
+                gcode.process_subcommands_now(F("M211 S1"));  // Soft end-stops
+              #endif
               TERN_(HAS_LEVELING, set_bed_leveling_enabled(level_state));
               Draw_Menu(Prepare, PREPARE_ZOFFSET);
             }
@@ -1508,7 +1528,8 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
                 sprintf_P(cmd, PSTR("G0 F4000 X%s Y%s"), dtostrf(Z_SAFE_HOMING_X_POINT, 1, 3, str_1), dtostrf(Z_SAFE_HOMING_Y_POINT, 1, 3, str_2));
                 gcode.process_subcommands_now(cmd);
               #else
-                gcode.process_subcommands_now(F("G0 F4000 X117.5 Y117.5"));
+                sprintf_P(cmd, PSTR("G0 F4000 X%s Y%s"), dtostrf((X_BED_SIZE + X_MIN_POS) / 2.0f, 1, 3, str_1), dtostrf((Y_BED_SIZE + Y_MIN_POS) / 2.0f, 1, 3, str_2));
+                gcode.process_subcommands_now(cmd);
               #endif
               gcode.process_subcommands_now(F("G0 F300 Z0"));
               planner.synchronize();
@@ -1518,29 +1539,10 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
           case ZOFFSET_MODE:
             if (draw) {
               Draw_Menu_Item(row, ICON_Zoffset, F("Live Adjustment"));
-              Draw_Checkbox(row, liveadjust);
+              Draw_Option(zoffsetmode, zoffset_modes, row);
             }
-            else {
-              if (!liveadjust) {
-                if (axes_should_home()) {
-                  Popup_Handler(Home);
-                  gcode.home_all_axes(true);
-                }
-                Popup_Handler(MoveWait);
-                #if ENABLED(Z_SAFE_HOMING)
-                  planner.synchronize();
-                  sprintf_P(cmd, PSTR("G0 F4000 X%s Y%s"), dtostrf(Z_SAFE_HOMING_X_POINT, 1, 3, str_1), dtostrf(Z_SAFE_HOMING_Y_POINT, 1, 3, str_2));
-                  gcode.process_subcommands_now(cmd);
-                #else
-                  gcode.process_subcommands_now(F("G0 F4000 X117.5 Y117.5"));
-                #endif
-                gcode.process_subcommands_now(F("G0 F300 Z0"));
-                planner.synchronize();
-                Redraw_Menu();
-              }
-              liveadjust = !liveadjust;
-              Draw_Checkbox(row, liveadjust);
-            }
+            else
+              Modify_Option(zoffsetmode, zoffset_modes, 2);
             break;
           case ZOFFSET_OFFSET:
             if (draw) {
@@ -1555,7 +1557,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
               Draw_Menu_Item(row, ICON_Axis, F("Microstep Up"));
             else {
               if (zoffsetvalue < MAX_Z_OFFSET) {
-                if (liveadjust) {
+                if (zoffsetmode != 0) {
                   gcode.process_subcommands_now(F("M290 Z0.01"));
                   planner.synchronize();
                 }
@@ -1569,7 +1571,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
               Draw_Menu_Item(row, ICON_AxisD, F("Microstep Down"));
             else {
               if (zoffsetvalue > MIN_Z_OFFSET) {
-                if (liveadjust) {
+                if (zoffsetmode != 0) {
                   gcode.process_subcommands_now(F("M290 Z-0.01"));
                   planner.synchronize();
                 }
@@ -1750,7 +1752,8 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define CONTROL_BACK 0
       #define CONTROL_TEMP (CONTROL_BACK + 1)
       #define CONTROL_MOTION (CONTROL_TEMP + 1)
-      #define CONTROL_VISUAL (CONTROL_MOTION + 1)
+      #define CONTROL_FWRETRACT (CONTROL_MOTION + ENABLED(FWRETRACT))
+      #define CONTROL_VISUAL (CONTROL_FWRETRACT + 1)
       #define CONTROL_ADVANCED (CONTROL_VISUAL + 1)
       #define CONTROL_SAVE (CONTROL_ADVANCED + ENABLED(EEPROM_SETTINGS))
       #define CONTROL_RESTORE (CONTROL_SAVE + ENABLED(EEPROM_SETTINGS))
@@ -1778,6 +1781,14 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
           else
             Draw_Menu(Motion);
           break;
+        #if ENABLED(FWRETRACT)
+          case CONTROL_FWRETRACT:
+          if (draw)
+            Draw_Menu_Item(row, ICON_StepE, GET_TEXT_F(MSG_AUTORETRACT), nullptr, true);
+          else
+            Draw_Menu(FwRetraction);
+          break;
+        #endif
         case CONTROL_VISUAL:
           if (draw)
             Draw_Menu_Item(row, ICON_PrintSize, F("Visual"), nullptr, true);
@@ -2424,6 +2435,99 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       }
       break;
 
+    #if ENABLED(FWRETRACT)
+      case FwRetraction:
+
+        #define FWR_BACK 0
+        #define FWR_RET_AUTO (FWR_BACK + 1)
+        #define FWR_RET_LENGTH (FWR_RET_AUTO + 1)
+        #define FWR_RET_SPEED (FWR_RET_LENGTH + 1)
+        #define FWR_ZLIFT (FWR_RET_SPEED + 1)
+        #define FWR_REC_EXT_LENGTH (FWR_ZLIFT + 1)
+        #define FWR_REC_SPEED (FWR_REC_EXT_LENGTH + 1)
+        #define FWR_RESET (FWR_REC_SPEED + 1)
+        #define FWR_TOTAL FWR_RESET
+
+        switch (item) {
+        
+          case FWR_BACK:
+          if (draw)
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
+          else {
+            if (flag_tune) {
+              flag_tune = false;
+              Redraw_Menu(false, true, true);
+            }
+            else
+              Draw_Menu(Control, CONTROL_FWRETRACT);
+          }
+          break;
+          case FWR_RET_AUTO:
+            if (draw) {
+              Auto_FW_Retract = fwretract.autoretract_enabled;
+              Draw_Menu_Item(row, ICON_StepE, GET_TEXT_F(MSG_AUTORETRACT));
+              Draw_Checkbox(row, Auto_FW_Retract);
+            }
+            else {
+              if (MIN_AUTORETRACT <= MAX_AUTORETRACT) {
+                Auto_FW_Retract = !Auto_FW_Retract;
+                fwretract.enable_autoretract(Auto_FW_Retract);
+                Draw_Checkbox(row, Auto_FW_Retract);
+              }
+            }
+            break;
+          case FWR_RET_LENGTH:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_FWRetLength, GET_TEXT_F(MSG_CONTROL_RETRACT));
+              Draw_Float(fwretract.settings.retract_length, row, false, 10);
+            }
+            else
+              Modify_Value(fwretract.settings.retract_length, 0, 10, 10);
+            break;
+          case FWR_RET_SPEED:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_FWRetSpeed, GET_TEXT_F(MSG_SINGLENOZZLE_RETRACT_SPEED));
+              Draw_Float(fwretract.settings.retract_feedrate_mm_s, row, false, 10);
+            }
+            else
+              Modify_Value(fwretract.settings.retract_feedrate_mm_s, 1, 90, 10);
+            break;
+          case FWR_ZLIFT:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_FWRetZRaise, GET_TEXT_F(MSG_CONTROL_RETRACT_ZHOP));
+              Draw_Float(fwretract.settings.retract_zraise, row, false, 100);
+            }
+            else
+              Modify_Value(fwretract.settings.retract_zraise, 0, 10, 100);
+            break;
+          case FWR_REC_EXT_LENGTH:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_FWRecExtLength, GET_TEXT_F(MSG_CONTROL_RETRACT_RECOVER));
+              Draw_Float(fwretract.settings.retract_recover_extra, row, false, 10);
+            }
+            else
+              Modify_Value(fwretract.settings.retract_recover_extra, -10, 10, 10);
+            break;
+          case FWR_REC_SPEED:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_FWRecSpeed, GET_TEXT_F(MSG_SINGLENOZZLE_UNRETRACT_SPEED));
+              Draw_Float(fwretract.settings.retract_recover_feedrate_mm_s, row, false, 10);
+            }
+            else
+              Modify_Value(fwretract.settings.retract_recover_feedrate_mm_s, 1, 90, 10);
+            break;
+          case FWR_RESET:
+            if (draw)
+              Draw_Menu_Item(row, ICON_StepE, GET_TEXT_F(MSG_BUTTON_RESET));
+            else {
+              fwretract.reset();
+              Draw_Menu(FwRetraction);
+            }
+            break;
+        }
+        break;
+    #endif
+
     case HomeOffsets:
 
       #define HOMEOFFSETS_BACK 0
@@ -2851,7 +2955,8 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define ADVANCED_FILSENSORENABLED (ADVANCED_COLD_EXTRUDE + ENABLED(FILAMENT_RUNOUT_SENSOR))
       #define ADVANCED_FILSENSORDISTANCE (ADVANCED_FILSENSORENABLED + ENABLED(HAS_FILAMENT_RUNOUT_DISTANCE))
       #define ADVANCED_POWER_LOSS (ADVANCED_FILSENSORDISTANCE + ENABLED(POWER_LOSS_RECOVERY))
-      #define ADVANCED_ESDIAG (ADVANCED_POWER_LOSS + ENABLED(HAS_ESDIAG))
+      #define ADVANCED_BAUDRATE_MODE (ADVANCED_POWER_LOSS + ENABLED(BAUD_RATE_GCODE))
+      #define ADVANCED_ESDIAG (ADVANCED_BAUDRATE_MODE + ENABLED(HAS_ESDIAG))
       #define ADVANCED_LOCKSCREEN (ADVANCED_ESDIAG + ENABLED(HAS_LOCKSCREEN))
       #define ADVANCED_TOTAL ADVANCED_LOCKSCREEN
 
@@ -2970,6 +3075,21 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             else {
               recovery.enable(!recovery.enabled);
               Draw_Checkbox(row, recovery.enabled);
+            }
+            break;
+        #endif
+        #if ENABLED(BAUD_RATE_GCODE)
+          case ADVANCED_BAUDRATE_MODE:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_Setspeed, F("115k Baud"));
+              Draw_Checkbox(row, eeprom_settings.Baud115k);
+            }
+            else {
+              eeprom_settings.Baud115k = !eeprom_settings.Baud115k;
+              if (eeprom_settings.Baud115k)
+                queue.inject(F("M575 P0 B115200"));
+              else
+                queue.inject(F("M575 P0 B250000"));
             }
             break;
         #endif
@@ -3804,7 +3924,8 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define TUNE_ZOFFSET (TUNE_FAN + ENABLED(HAS_ZOFFSET_ITEM))
       #define TUNE_ZUP (TUNE_ZOFFSET + ENABLED(HAS_ZOFFSET_ITEM))
       #define TUNE_ZDOWN (TUNE_ZUP + ENABLED(HAS_ZOFFSET_ITEM))
-      #define TUNE_CHANGEFIL (TUNE_ZDOWN + ENABLED(FILAMENT_LOAD_UNLOAD_GCODES))
+      #define TUNE_FWRETRACT (TUNE_ZDOWN + ENABLED(FWRETRACT))
+      #define TUNE_CHANGEFIL (TUNE_FWRETRACT + ENABLED(FILAMENT_LOAD_UNLOAD_GCODES))
       #define TUNE_FILSENSORENABLED (TUNE_CHANGEFIL + ENABLED(FILAMENT_RUNOUT_SENSOR))
       #define TUNE_BACKLIGHT_OFF (TUNE_FILSENSORENABLED + 1)
       #define TUNE_BACKLIGHT (TUNE_BACKLIGHT_OFF + 1)
@@ -3897,6 +4018,18 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             break;
         #endif
 
+        #if ENABLED(FWRETRACT)
+          case TUNE_FWRETRACT:
+            if (draw)
+              Draw_Menu_Item(row, ICON_StepE, GET_TEXT_F(MSG_AUTORETRACT), nullptr, true);
+            else {
+              flag_tune = true;
+              last_pos_selection = selection;
+              Draw_Menu(FwRetraction);
+              }
+            break;
+        #endif
+
         #if ENABLED(FILAMENT_LOAD_UNLOAD_GCODES)
           case TUNE_CHANGEFIL:
             if (draw)
@@ -3944,119 +4077,121 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       }
       break;
 
-    case PreheatHotend:
+    #if HAS_PREHEAT && HAS_HOTEND
+      case PreheatHotend:
 
-        #define PREHEATHOTEND_BACK 0
-        #define PREHEATHOTEND_CONTINUE (PREHEATHOTEND_BACK + 1)
-        #define PREHEATHOTEND_1 (PREHEATHOTEND_CONTINUE + (PREHEAT_COUNT >= 1))
-        #define PREHEATHOTEND_2 (PREHEATHOTEND_1 + (PREHEAT_COUNT >= 2))
-        #define PREHEATHOTEND_3 (PREHEATHOTEND_2 + (PREHEAT_COUNT >= 3))
-        #define PREHEATHOTEND_4 (PREHEATHOTEND_3 + (PREHEAT_COUNT >= 4))
-        #define PREHEATHOTEND_5 (PREHEATHOTEND_4 + (PREHEAT_COUNT >= 5))
-        #define PREHEATHOTEND_CUSTOM (PREHEATHOTEND_5 + 1)
-        #define PREHEATHOTEND_TOTAL PREHEATHOTEND_CUSTOM
+          #define PREHEATHOTEND_BACK 0
+          #define PREHEATHOTEND_CONTINUE (PREHEATHOTEND_BACK + 1)
+          #define PREHEATHOTEND_1 (PREHEATHOTEND_CONTINUE + (PREHEAT_COUNT >= 1))
+          #define PREHEATHOTEND_2 (PREHEATHOTEND_1 + (PREHEAT_COUNT >= 2))
+          #define PREHEATHOTEND_3 (PREHEATHOTEND_2 + (PREHEAT_COUNT >= 3))
+          #define PREHEATHOTEND_4 (PREHEATHOTEND_3 + (PREHEAT_COUNT >= 4))
+          #define PREHEATHOTEND_5 (PREHEATHOTEND_4 + (PREHEAT_COUNT >= 5))
+          #define PREHEATHOTEND_CUSTOM (PREHEATHOTEND_5 + 1)
+          #define PREHEATHOTEND_TOTAL PREHEATHOTEND_CUSTOM
 
-        switch (item) {
-          case PREHEATHOTEND_BACK:
-            if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Cancel"));
-            else {
-              thermalManager.setTargetHotend(0, 0);
-              thermalManager.set_fan_speed(0, 0);
-              Redraw_Menu(false, true, true);
-            }
-            break;
-          case PREHEATHOTEND_CONTINUE:
-            if (draw)
-              Draw_Menu_Item(row, ICON_SetEndTemp, F("Continue"));
-            else {
-              Popup_Handler(Heating);
-              thermalManager.wait_for_hotend(0);
-              switch (last_menu) {
-                case Prepare:
-                  Popup_Handler(FilChange);
-                  sprintf_P(cmd, PSTR("M600 B1 R%i"), thermalManager.temp_hotend[0].target);
-                  gcode.process_subcommands_now(cmd);
-                  break;
-                #if ENABLED(FILAMENT_LOAD_UNLOAD_GCODES)
-                  case ChangeFilament:
-                    switch (last_selection) {
-                      case CHANGEFIL_LOAD:
-                        Popup_Handler(FilLoad);
-                        gcode.process_subcommands_now(F("M701"));
-                        planner.synchronize();
-                        Redraw_Menu(true, true, true);
-                        break;
-                      case CHANGEFIL_UNLOAD:
-                        Popup_Handler(FilLoad, true);
-                        gcode.process_subcommands_now(F("M702"));
-                        planner.synchronize();
-                        Redraw_Menu(true, true, true);
-                        break;
-                      case CHANGEFIL_CHANGE:
-                        Popup_Handler(FilChange);
-                        sprintf_P(cmd, PSTR("M600 B1 R%i"), thermalManager.temp_hotend[0].target);
-                        gcode.process_subcommands_now(cmd);
-                        break;
-                    }
-                    break;
-                #endif
-                default:
-                  Redraw_Menu(true, true, true);
-                  break;
+          switch (item) {
+            case PREHEATHOTEND_BACK:
+              if (draw)
+                Draw_Menu_Item(row, ICON_Back, F("Cancel"));
+              else {
+                thermalManager.setTargetHotend(0, 0);
+                thermalManager.set_fan_speed(0, 0);
+                Redraw_Menu(false, true, true);
               }
-            }
-            break;
-          #if PREHEAT_COUNT >= 1
-            case PREHEATHOTEND_1:
-              if (draw)
-                Draw_Menu_Item(row, ICON_Temperature, F(PREHEAT_1_LABEL));
-              else
-                ui.preheat_hotend_and_fan(0);
               break;
-          #endif
-          #if PREHEAT_COUNT >= 2
-            case PREHEATHOTEND_2:
+            case PREHEATHOTEND_CONTINUE:
               if (draw)
-                Draw_Menu_Item(row, ICON_Temperature, F(PREHEAT_2_LABEL));
-              else
-                ui.preheat_hotend_and_fan(1);
+                Draw_Menu_Item(row, ICON_SetEndTemp, F("Continue"));
+              else {
+                Popup_Handler(Heating);
+                thermalManager.wait_for_hotend(0);
+                switch (last_menu) {
+                  case Prepare:
+                    Popup_Handler(FilChange);
+                    sprintf_P(cmd, PSTR("M600 B1 R%i"), thermalManager.temp_hotend[0].target);
+                    gcode.process_subcommands_now(cmd);
+                    break;
+                  #if ENABLED(FILAMENT_LOAD_UNLOAD_GCODES)
+                    case ChangeFilament:
+                      switch (last_selection) {
+                        case CHANGEFIL_LOAD:
+                          Popup_Handler(FilLoad);
+                          gcode.process_subcommands_now(F("M701"));
+                          planner.synchronize();
+                          Redraw_Menu(true, true, true);
+                          break;
+                        case CHANGEFIL_UNLOAD:
+                          Popup_Handler(FilLoad, true);
+                          gcode.process_subcommands_now(F("M702"));
+                          planner.synchronize();
+                          Redraw_Menu(true, true, true);
+                          break;
+                        case CHANGEFIL_CHANGE:
+                          Popup_Handler(FilChange);
+                          sprintf_P(cmd, PSTR("M600 B1 R%i"), thermalManager.temp_hotend[0].target);
+                          gcode.process_subcommands_now(cmd);
+                          break;
+                      }
+                      break;
+                  #endif
+                  default:
+                    Redraw_Menu(true, true, true);
+                    break;
+                }
+              }
               break;
-          #endif
-          #if PREHEAT_COUNT >= 3
-            case PREHEATHOTEND_3:
-              if (draw)
-                Draw_Menu_Item(row, ICON_Temperature, F(PREHEAT_3_LABEL));
+            #if PREHEAT_COUNT >= 1
+              case PREHEATHOTEND_1:
+                if (draw)
+                  Draw_Menu_Item(row, ICON_Temperature, F(PREHEAT_1_LABEL));
+                else
+                  ui.preheat_hotend_and_fan(0);
+                break;
+            #endif
+            #if PREHEAT_COUNT >= 2
+              case PREHEATHOTEND_2:
+                if (draw)
+                  Draw_Menu_Item(row, ICON_Temperature, F(PREHEAT_2_LABEL));
+                else
+                  ui.preheat_hotend_and_fan(1);
+                break;
+            #endif
+            #if PREHEAT_COUNT >= 3
+              case PREHEATHOTEND_3:
+                if (draw)
+                  Draw_Menu_Item(row, ICON_Temperature, F(PREHEAT_3_LABEL));
+                else
+                  ui.preheat_hotend_and_fan(2);
+                break;
+            #endif
+            #if PREHEAT_COUNT >= 4
+              case PREHEATHOTEND_4:
+                if (draw)
+                  Draw_Menu_Item(row, ICON_Temperature, F(PREHEAT_4_LABEL));
+                else
+                  ui.preheat_hotend_and_fan(3);
+                break;
+            #endif
+            #if PREHEAT_COUNT >= 5
+              case PREHEATHOTEND_5:
+                if (draw)
+                  Draw_Menu_Item(row, ICON_Temperature, F(PREHEAT_5_LABEL));
+                else
+                  ui.preheat_hotend_and_fan(4);
+                break;
+            #endif
+            case PREHEATHOTEND_CUSTOM:
+              if (draw) {
+                Draw_Menu_Item(row, ICON_Temperature, F("Custom"));
+                Draw_Float(thermalManager.temp_hotend[0].target, row, false, 1);
+              }
               else
-                ui.preheat_hotend_and_fan(2);
+                Modify_Value(thermalManager.temp_hotend[0].target, EXTRUDE_MINTEMP, MAX_E_TEMP, 1);
               break;
-          #endif
-          #if PREHEAT_COUNT >= 4
-            case PREHEATHOTEND_4:
-              if (draw)
-                Draw_Menu_Item(row, ICON_Temperature, F(PREHEAT_4_LABEL));
-              else
-                ui.preheat_hotend_and_fan(3);
-              break;
-          #endif
-          #if PREHEAT_COUNT >= 5
-            case PREHEATHOTEND_5:
-              if (draw)
-                Draw_Menu_Item(row, ICON_Temperature, F(PREHEAT_5_LABEL));
-              else
-                ui.preheat_hotend_and_fan(4);
-              break;
-          #endif
-          case PREHEATHOTEND_CUSTOM:
-            if (draw) {
-              Draw_Menu_Item(row, ICON_Temperature, F("Custom"));
-              Draw_Float(thermalManager.temp_hotend[0].target, row, false, 1);
-            }
-            else
-              Modify_Value(thermalManager.temp_hotend[0].target, EXTRUDE_MINTEMP, MAX_E_TEMP, 1);
-            break;
-        }
-        break;
+          }
+          break;
+    #endif  // HAS_PREHEAT && HAS_HOTEND
   }
 }
 
@@ -4103,6 +4238,9 @@ FSTR_P CrealityDWINClass::Get_Menu_Title(uint8_t menu) {
       case Preheat5:        return F(PREHEAT_5_LABEL " Settings");
     #endif
     case Motion:            return F("Motion Settings");
+    #if ENABLED(FWRETRACT)
+      case FwRetraction:    return F("Firmware Retract");
+    #endif
     case HomeOffsets:       return F("Home Offsets");
     case MaxSpeed:          return F("Max Speed");
     case MaxAcceleration:   return F("Max Acceleration");
@@ -4179,6 +4317,9 @@ uint8_t CrealityDWINClass::Get_Menu_Size(uint8_t menu) {
       case Preheat5:        return PREHEAT5_TOTAL;
     #endif
     case Motion:            return MOTION_TOTAL;
+    #if ENABLED(FWRETRACT)
+      case FwRetraction:    return FWR_TOTAL;
+    #endif
     case HomeOffsets:       return HOMEOFFSETS_TOTAL;
     case MaxSpeed:          return SPEED_TOTAL;
     case MaxAcceleration:   return ACCEL_TOTAL;
@@ -4306,20 +4447,27 @@ void CrealityDWINClass::Menu_Control() {
 
 void CrealityDWINClass::Value_Control() {
   EncoderState encoder_diffState = Encoder_ReceiveAnalyze();
+  float difvalue = 0;
   if (encoder_diffState == ENCODER_DIFF_NO) return;
-  if (encoder_diffState == ENCODER_DIFF_CW)
+  if (encoder_diffState == ENCODER_DIFF_CW) {
     tempvalue += EncoderRate.encoderMoveValue;
-  else if (encoder_diffState == ENCODER_DIFF_CCW)
+    difvalue = EncoderRate.encoderMoveValue;
+  }
+  else if (encoder_diffState == ENCODER_DIFF_CCW) {
     tempvalue -= EncoderRate.encoderMoveValue;
+    difvalue = - EncoderRate.encoderMoveValue;
+  }
   else if (encoder_diffState == ENCODER_DIFF_ENTER) {
     process = Menu;
     EncoderRate.enabled = false;
     Draw_Float(tempvalue / valueunit, selection - scrollpos, false, valueunit);
     DWIN_UpdateLCD();
-    if (active_menu == ZOffset && liveadjust) {
+    if (active_menu == ZOffset && zoffsetmode != 0) {
       planner.synchronize();
-      current_position.z += (tempvalue / valueunit - zoffsetvalue);
-      planner.buffer_line(current_position, homing_feedrate(Z_AXIS), active_extruder);
+      if (zoffsetmode == 1) {
+        current_position.z += (tempvalue / valueunit - zoffsetvalue);
+        planner.buffer_line(current_position, homing_feedrate(Z_AXIS), active_extruder);
+      }
       current_position.z = 0;
       sync_plan_position();
     }
@@ -4363,9 +4511,36 @@ void CrealityDWINClass::Value_Control() {
   NOMORE(tempvalue, (valuemax * valueunit));
   Draw_Float(tempvalue / valueunit, selection - scrollpos, true, valueunit);
   DWIN_UpdateLCD();
-  if (active_menu == Move && livemove) {
-    *(float*)valuepointer = tempvalue / valueunit;
-    planner.buffer_line(current_position, manual_feedrate_mm_s[selection - 1], active_extruder);
+
+  if (valuepointer == &ui.brightness) {
+    *(uint8_t*)valuepointer = tempvalue / valueunit;
+    ui.refresh_brightness();
+  }
+
+  switch (active_menu) {
+    case Move:
+      if (livemove) {
+        *(float*)valuepointer = tempvalue / valueunit;
+        planner.buffer_line(current_position, manual_feedrate_mm_s[selection - 1], active_extruder);
+      }
+      break;
+    case ZOffset:
+      if (zoffsetmode == 2) {
+        planner.synchronize();
+        sprintf_P(cmd, PSTR("M290 Z%s"), dtostrf((difvalue / valueunit), 1, 3, str_1));
+        gcode.process_subcommands_now(cmd);
+        planner.synchronize();
+      }
+      break;
+    case Tune:
+      if (selection == TUNE_ZOFFSET) {
+        planner.synchronize();
+        sprintf_P(cmd, PSTR("M290 Z%s"), dtostrf((difvalue / valueunit), 1, 3, str_1));
+        gcode.process_subcommands_now(cmd);
+        planner.synchronize();
+      }
+      break;
+    default : break;
   }
 }
 
@@ -4397,6 +4572,27 @@ void CrealityDWINClass::Option_Control() {
     }
     else if (valuepointer == &preheat_modes)
       preheatmode = tempvalue;
+    else if (valuepointer == &zoffset_modes) {
+      zoffsetmode = tempvalue;
+      if (zoffsetmode == 1 || zoffsetmode == 2) {
+        if (axes_should_home()) {
+          Popup_Handler(Home);
+          gcode.home_all_axes(true);
+        }
+        Popup_Handler(MoveWait);
+        #if ENABLED(Z_SAFE_HOMING)
+          planner.synchronize();
+          sprintf_P(cmd, PSTR("G0 F4000 X%s Y%s"), dtostrf(Z_SAFE_HOMING_X_POINT, 1, 3, str_1), dtostrf(Z_SAFE_HOMING_Y_POINT, 1, 3, str_2));
+          gcode.process_subcommands_now(cmd);
+        #else
+          sprintf_P(cmd, PSTR("G0 F4000 X%s Y%s"), dtostrf((X_BED_SIZE + X_MIN_POS) / 2.0f, 1, 3, str_1), dtostrf((Y_BED_SIZE + Y_MIN_POS) / 2.0f, 1, 3, str_2));
+          gcode.process_subcommands_now(cmd);
+        #endif
+        gcode.process_subcommands_now(F("G0 F300 Z0"));
+        planner.synchronize();
+        Redraw_Menu();
+      }
+    }
 
     Draw_Option(tempvalue, static_cast<const char * const *>(valuepointer), selection - scrollpos, false, (valuepointer == &color_names));
     DWIN_UpdateLCD();
@@ -5039,6 +5235,7 @@ void CrealityDWINClass::Load_Settings(const char *buff) {
   TERN_(AUTO_BED_LEVELING_UBL, mesh_conf.tilt_grid = eeprom_settings.tilt_grid_size + 1);
   if (eeprom_settings.corner_pos == 0) eeprom_settings.corner_pos = 325;
   corner_pos = eeprom_settings.corner_pos / 10.0f;
+  if (eeprom_settings.Baud115k) queue.inject(F("M575 P0 B115200"));
   Redraw_Screen();
   #if ENABLED(POWER_LOSS_RECOVERY)
     static bool init = true;
@@ -5046,6 +5243,9 @@ void CrealityDWINClass::Load_Settings(const char *buff) {
       init = false;
       queue.inject(F("M1000 S"));
     }
+  #endif
+  #if ENABLED(FWRETRACT)
+    Auto_FW_Retract = fwretract.autoretract_enabled;
   #endif
 }
 
@@ -5067,15 +5267,13 @@ void CrealityDWINClass::Reset_Settings() {
   TERN_(AUTO_BED_LEVELING_UBL, mesh_conf.tilt_grid = eeprom_settings.tilt_grid_size + 1);
   corner_pos = eeprom_settings.corner_pos / 10.0f;
   TERN_(SOUND_MENU_ITEM, ui.buzzer_enabled = true);
+  TERN_(BAUD_RATE_GCODE, eeprom_settings.Baud115k = false);
+  TERN_(FWRETRACT, Auto_FW_Retract = fwretract.autoretract_enabled);
   Redraw_Screen();
 }
 
 void MarlinUI::init_lcd() {
-  delay(800);
-  SERIAL_ECHOPGM("\nDWIN handshake ");
-  if (DWIN_Handshake()) SERIAL_ECHOLNPGM("ok."); else SERIAL_ECHOLNPGM("error.");
-  DWIN_Frame_SetDir(1); // Orientation 90°
-  DWIN_UpdateLCD();     // Show bootscreen (first image)
+  DWINUI::init();
   Encoder_Configuration();
   for (uint16_t t = 0; t <= 100; t += 2) {
     DWIN_ICON_Show(ICON, ICON_Bar, 15, 260);
@@ -5091,8 +5289,8 @@ void MarlinUI::init_lcd() {
   void MarlinUI::pause_show_message(const PauseMessage message, const PauseMode mode/*=PAUSE_MODE_SAME*/, const uint8_t extruder/*=active_extruder*/) {
     switch (message) {
       case PAUSE_MESSAGE_INSERT:  CrealityDWIN.Confirm_Handler(FilInsert);  break;
-      case PAUSE_MESSAGE_PURGE:
-      case PAUSE_MESSAGE_OPTION:  CrealityDWIN.Popup_Handler(PurgeMore);    break;
+      case PAUSE_MESSAGE_PURGE:   break;
+      case PAUSE_MESSAGE_OPTION:  pause_menu_response = PAUSE_RESPONSE_WAIT_FOR; CrealityDWIN.Popup_Handler(PurgeMore); break;
       case PAUSE_MESSAGE_HEAT:    CrealityDWIN.Confirm_Handler(HeaterTime); break;
       case PAUSE_MESSAGE_WAITING: CrealityDWIN.Draw_Print_Screen();         break;
       default: break;
@@ -5137,7 +5335,7 @@ void MarlinUI::init_lcd() {
 #endif
 
 // Reboot screen from DWIN UI Enhanced
-void DWIN_RebootScreen() {
+void CrealityDWINClass::DWIN_RebootScreen() {
   DWIN_Frame_Clear(Color_Bg_Black);
   DWIN_JPG_ShowAndCache(0);
   DWINUI::Draw_CenteredString(Color_White, 220, GET_TEXT_F(MSG_PLEASE_WAIT_REBOOT));

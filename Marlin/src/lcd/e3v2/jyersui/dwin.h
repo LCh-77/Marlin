@@ -23,16 +23,14 @@
 
 /**
  * lcd/e3v2/jyersui/dwin.h
+ * JYERSUI Author: Jacob Myers
+ *
+ * JYERSUI Enhanced by LCH-77
+ * Version: 1.2
+ * Date: Feb 12, 2022
  */
 
-#include "dwin_lcd.h"
-#include "../common/dwin_set.h"
-#include "../common/dwin_font.h"
-#include "../common/dwin_color.h"
-#include "../common/encoder.h"
-#include "../../../libs/BL24CXX.h"
-
-#include "../../../inc/MarlinConfigPre.h"
+#include "dwin_defines.h"
 
 enum processID : uint8_t {
   Main, Print, Menu, Value, Option, File, Popup, Confirm, Wait, Locked
@@ -70,6 +68,7 @@ enum menuID : uint8_t {
         MaxAcceleration,
         MaxJerk,
         Steps,
+      FwRetraction,
       Visual,
         ColorSettings,
       Advanced,
@@ -112,10 +111,14 @@ public:
     uint8_t status_area_text : 4;
     uint8_t coordinates_text : 4;
     uint8_t coordinates_split_line : 4;
+    #if ENABLED(BAUD_RATE_GCODE)
+      bool Baud115k : 1;
+    #endif
   } eeprom_settings;
 
   static constexpr const char * const color_names[11] = { "Default", "White", "Green", "Cyan", "Blue", "Magenta", "Red", "Orange", "Yellow", "Brown", "Black" };
   static constexpr const char * const preheat_modes[3] = { "Both", "Hotend", "Bed" };
+  static constexpr const char * const zoffset_modes[3] = { "No Live" , "OnClick", "   Live" };
 
   static void Clear_Screen(uint8_t e=3);
   static void Draw_Float(float value, uint8_t row, bool selected=false, uint8_t minunit=10);
@@ -189,10 +192,15 @@ public:
   static void Load_Settings(const char *buff);
   static void Reset_Settings();
 
-  static void DWIN_EndstopsDiag();
-  static void DWIN_LockScreen();
-  static void DWIN_UnLockScreen();
-  static void HMI_LockScreen();
+  #if HAS_ESDIAG
+    static void DWIN_EndstopsDiag();
+  #endif
+  #if HAS_LOCKSCREEN
+    static void DWIN_LockScreen();
+    static void DWIN_UnLockScreen();
+    static void HMI_LockScreen();
+  #endif
+  static void DWIN_RebootScreen();
   static void RebootPrinter();
   static void Update_Print_Filename(const char * const text);
 };

@@ -38,7 +38,7 @@
 #include "dwinui.h"
 
 // Default UI Colors
-#define Def_Background_Color  RGB( 1, 12,  8)
+#define Def_Background_Color  Color_Bg_Black
 #define Def_Cursor_color      RGB(20, 49, 31)
 #define Def_TitleBg_color     RGB( 0, 23, 16)
 #define Def_TitleTxt_color    Color_White
