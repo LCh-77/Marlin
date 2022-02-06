@@ -25,8 +25,8 @@
  * JYERSUI Author: Jacob Myers
  *
  * JYERSUI Enhanced by LCH-77
- * Version: 1.2
- * Date: Feb 12, 2022
+ * Version: 1.3
+ * Date: Feb 06, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
@@ -72,6 +72,10 @@
 
 #if HAS_LEVELING
   #include "../../../feature/bedlevel/bedlevel.h"
+#endif
+
+#ifdef BLTOUCH_HS_MODE
+  #include "../../../feature/bltouch.h"
 #endif
 
 #if ENABLED(AUTO_BED_LEVELING_UBL)
@@ -3121,7 +3125,8 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         #define PROBE_XOFFSET (PROBE_BACK + 1)
         #define PROBE_YOFFSET (PROBE_XOFFSET + 1)
         #define PROBE_ZOFFSET (PROBE_YOFFSET + 1)
-        #define PROBE_ALARMR (PROBE_ZOFFSET + ENABLED(BLTOUCH))
+        #define PROBE_HSMODE (PROBE_ZOFFSET + ENABLED(BLTOUCH))
+        #define PROBE_ALARMR (PROBE_HSMODE + ENABLED(BLTOUCH))
         #define PROBE_SELFTEST (PROBE_ALARMR + ENABLED(BLTOUCH))
         #define PROBE_MOVEP (PROBE_SELFTEST + ENABLED(BLTOUCH))
         #define PROBE_TEST (PROBE_MOVEP + 1)
@@ -3162,6 +3167,16 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
               Modify_Value(probe.offset.z, MIN_Z_OFFSET, MAX_Z_OFFSET, 100);
             break;
           #if ENABLED(BLTOUCH)
+            case PROBE_HSMODE:
+              if (draw) {
+                Draw_Menu_Item(row, ICON_HSMode, F("Enable HS mode"));
+                Draw_Checkbox(row, bltouch.high_speed_mode);
+              }
+              else {
+                bltouch.high_speed_mode = !bltouch.high_speed_mode;
+                Draw_Checkbox(row, bltouch.high_speed_mode);
+              }
+              break;
             case PROBE_ALARMR:
               if (draw) {
               Draw_Menu_Item(row, ICON_ProbeAlarm, GET_TEXT_F(MSG_BLTOUCH_RESET));

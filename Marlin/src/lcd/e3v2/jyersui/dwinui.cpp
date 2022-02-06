@@ -22,9 +22,9 @@
 
 /**
  * DWIN UI Enhanced implementation
- * Author: Miguel A. Risco-Castillo
- * Version: 3.9.1
- * Date: 2021/11/21
+ * Author: Miguel A. Risco-Castillo (MRISCOC)
+ * Version: 3.11.1
+ * Date: 2022/01/19
  *
  * Modded for JYERSUI by LCH-77
  */

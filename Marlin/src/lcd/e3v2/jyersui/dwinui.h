@@ -23,9 +23,9 @@
 
 /**
  * DWIN UI Enhanced implementation
- * Author: Miguel A. Risco-Castillo
- * Version: 3.9.1
- * Date: 2021/11/21
+ * Author: Miguel A. Risco-Castillo (MRISCOC)
+ * Version: 3.11.1
+ * Date: 2022/01/19
  *
  * Modded for JYERSUI by LCH-77
  */
@@ -76,6 +76,7 @@
   #define ICON_FWRetZRaise          ICON_MoveZ
   #define ICON_FWRecExtLength       ICON_StepE
   #define ICON_FWRecSpeed           ICON_Setspeed
+  #define ICON_HSMode               ICON_StockConfiguration
 #endif
 
 // Extended UI Colors
@@ -192,6 +193,13 @@ namespace DWINUI {
   //  x/y: Upper-left point
   inline void Draw_Icon(uint8_t icon, uint16_t x, uint16_t y) {
     DWIN_ICON_Show(ICON, icon, x, y);
+  }
+
+  // Draw an Icon from the library ICON with its background
+  //  icon: Icon ID
+  //  x/y: Upper-left point
+  inline void Draw_IconWB(uint8_t icon, uint16_t x, uint16_t y) {
+    DWIN_ICON_Show(true, false, false, ICON, icon, x, y);
   }
 
   // Draw a positive integer
