@@ -30,6 +30,11 @@
  * Date: Feb 12, 2022
  */
 
+#include "../../../inc/MarlinConfigPre.h"
+#include "dwinui.h"
+//#include "../common/encoder.h"
+//#include "../../../libs/BL24CXX.h"
+//#include "../../../core/types.h"
 #include "dwin_defines.h"
 
 enum processID : uint8_t {
@@ -83,7 +88,11 @@ enum menuID : uint8_t {
       UBLMesh,
     InfoMain,
   Tune,
-  PreheatHotend
+  PreheatHotend,
+  #if JYENHANCED
+    Parkmenu,
+    PhySetMenu,
+  #endif
 };
 
 #define Custom_Colors 10
@@ -93,29 +102,6 @@ enum colorID : uint8_t {
 
 class CrealityDWINClass {
 public:
-  static constexpr size_t eeprom_data_size = 48;
-  static struct EEPROM_Settings { // use bit fields to save space, max 48 bytes
-    bool time_format_textual : 1;
-    #if ENABLED(AUTO_BED_LEVELING_UBL)
-      uint8_t tilt_grid_size : 3;
-    #endif
-    uint16_t corner_pos : 10;
-    uint8_t cursor_color : 4;
-    uint8_t menu_split_line : 4;
-    uint8_t menu_top_bg : 4;
-    uint8_t menu_top_txt : 4;
-    uint8_t highlight_box : 4;
-    uint8_t progress_percent : 4;
-    uint8_t progress_time : 4;
-    uint8_t status_bar_text : 4;
-    uint8_t status_area_text : 4;
-    uint8_t coordinates_text : 4;
-    uint8_t coordinates_split_line : 4;
-    #if ENABLED(BAUD_RATE_GCODE)
-      bool Baud115k : 1;
-    #endif
-  } eeprom_settings;
-
   static constexpr const char * const color_names[11] = { "Default", "White", "Green", "Cyan", "Blue", "Magenta", "Red", "Orange", "Yellow", "Brown", "Black" };
   static constexpr const char * const preheat_modes[3] = { "Both", "Hotend", "Bed" };
   static constexpr const char * const zoffset_modes[3] = { "No Live" , "OnClick", "   Live" };
@@ -161,7 +147,7 @@ public:
   static void Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw=true);
 
   static void Popup_Handler(PopupID popupid, bool option = false);
-  static void Confirm_Handler(PopupID popupid);
+  static void Confirm_Handler(PopupID popupid, bool option = false);
 
   static void Main_Menu_Control();
   static void Menu_Control();
@@ -203,6 +189,26 @@ public:
   static void DWIN_RebootScreen();
   static void RebootPrinter();
   static void Update_Print_Filename(const char * const text);
-};
 
+  #if JYENHANCED
+    static void DWIN_Invert_E0();
+  #endif
+
+  void DWIN_CError();
+  #if HAS_BED_PROBE
+    void DWIN_C12();
+  #endif
+  void DWIN_C108();
+  void DWIN_C510();
+  #if DEBUG_DWIN
+    void DWIN_C997();
+  #endif
+  void DWIN_Gcode(const int16_t codenum);
+
+  #if JYENHANCED
+    #if HAS_MESH
+      static void ApplyMeshLimits();
+    #endif
+  #endif
+};
 extern CrealityDWINClass CrealityDWIN;

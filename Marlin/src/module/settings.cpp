@@ -475,7 +475,7 @@ typedef struct SettingsDataStruct {
   #if ENABLED(DWIN_CREALITY_LCD_ENHANCED)
     uint8_t dwin_data[eeprom_data_size];
   #elif ENABLED(DWIN_CREALITY_LCD_JYERSUI)
-    uint8_t dwin_settings[CrealityDWIN.eeprom_data_size];
+    uint8_t dwin_settings[eeprom_data_size];
   #endif
 
   //
@@ -1444,7 +1444,7 @@ void MarlinSettings::postprocess() {
     }
     #elif ENABLED(DWIN_CREALITY_LCD_JYERSUI)
     {
-      char dwin_settings[CrealityDWIN.eeprom_data_size] = { 0 };
+      char dwin_settings[eeprom_data_size] = { 0 };
       CrealityDWIN.Save_Settings(dwin_settings);
       _FIELD_TEST(dwin_settings);
       EEPROM_WRITE(dwin_settings);
@@ -2372,7 +2372,7 @@ void MarlinSettings::postprocess() {
       }
       #elif ENABLED(DWIN_CREALITY_LCD_JYERSUI)
       {
-        const char dwin_settings[CrealityDWIN.eeprom_data_size] = { 0 };
+        const char dwin_settings[eeprom_data_size] = { 0 };
         _FIELD_TEST(dwin_settings);
         EEPROM_READ(dwin_settings);
         if (!validating) CrealityDWIN.Load_Settings(dwin_settings);

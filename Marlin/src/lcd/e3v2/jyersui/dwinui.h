@@ -34,6 +34,7 @@
 #include "../common/dwin_set.h"
 #include "../common/dwin_font.h"
 #include "../common/dwin_color.h"
+#include "../common/dwin_api.h"
 
 // Custom icons
 //#define DWIN_CREALITY_LCD_CUSTOM_ICONS
@@ -77,6 +78,20 @@
   #define ICON_FWRecExtLength       ICON_StepE
   #define ICON_FWRecSpeed           ICON_Setspeed
   #define ICON_HSMode               ICON_StockConfiguration
+#endif
+
+#if JYENHANCED
+  #define ICON_Park                 ICON_Motion
+  #define ICON_ParkPos              ICON_AdvSet
+  #define ICON_ParkPosX             ICON_StepX
+  #define ICON_ParkPosY             ICON_StepY
+  #define ICON_ParkPosZ             ICON_StepZ
+  #define ICON_PhySet               ICON_PrintSize
+  #define ICON_BedSizeX             ICON_PrintSize
+  #define ICON_BedSizeY             ICON_PrintSize
+  #define ICON_MaxPosX              ICON_MoveX
+  #define ICON_MaxPosY              ICON_MoveY
+  #define ICON_MaxPosZ              ICON_MoveZ
 #endif
 
 // Extended UI Colors

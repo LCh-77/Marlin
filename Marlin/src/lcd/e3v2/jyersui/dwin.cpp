@@ -33,9 +33,9 @@
 
 #if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
 
+#include "dwin_defines.h"
 #include "dwin.h"
 #include "dwinui.h"
-#include "dwin_defines.h"
 
 #include "../../marlinui.h"
 #include "../../../MarlinCore.h"
@@ -99,8 +99,6 @@
   #include "lockscreen.h"
 #endif
 
-#define MACHINE_SIZE STRINGIFY(X_BED_SIZE) "x" STRINGIFY(Y_BED_SIZE) "x" STRINGIFY(Z_MAX_POS)
-
 #define MENU_CHAR_LIMIT  24
 #define STATUS_CHAR_LIMIT  30
 
@@ -156,6 +154,7 @@ enum SelectItem : uint8_t {
   PRINT_COUNT
 };
 
+eeprom_settings_t eeprom_settings;
 uint8_t active_menu = MainMenu, last_menu = MainMenu;
 uint8_t selection = 0, last_selection = 0, last_pos_selection = 0;
 uint8_t scrollpos = 0;
@@ -190,6 +189,7 @@ float zoffsetvalue = 0;
 uint8_t gridpoint;
 float corner_avg;
 float corner_pos;
+float zval;
 
 bool probe_deployed = false;
 
@@ -398,8 +398,6 @@ CrealityDWINClass CrealityDWIN;
 #endif // HAS_MESH
 
 /* General Display Functions */
-
-struct CrealityDWINClass::EEPROM_Settings CrealityDWINClass::eeprom_settings{0};
 constexpr const char * const CrealityDWINClass::color_names[11];
 constexpr const char * const CrealityDWINClass::preheat_modes[3];
 constexpr const char * const CrealityDWINClass::zoffset_modes[3];
@@ -484,7 +482,7 @@ void CrealityDWINClass::Draw_Title(FSTR_P const ftitle) {
 void _Decorate_Menu_Item(uint8_t row, uint8_t icon, bool more) {
   if (icon) DWIN_ICON_Show(ICON, icon, 26, MBASE(row) - 3);   //Draw Menu Icon
   if (more) DWIN_ICON_Show(ICON, ICON_More, 226, MBASE(row) - 3); // Draw More Arrow
-  DWIN_Draw_Line(CrealityDWIN.GetColor(CrealityDWIN.eeprom_settings.menu_split_line, Line_Color, true), 16, MBASE(row) + 33, 256, MBASE(row) + 33); // Draw Menu Line
+  DWIN_Draw_Line(CrealityDWIN.GetColor(eeprom_settings.menu_split_line, Line_Color, true), 16, MBASE(row) + 33, 256, MBASE(row) + 33); // Draw Menu Line
 }
 
 void CrealityDWINClass::Draw_Menu_Item(uint8_t row, uint8_t icon/*=0*/, const char * label1, const char * label2, bool more/*=false*/, bool centered/*=false*/) {
@@ -1365,15 +1363,37 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
               Draw_Checkbox(row, use_probe);
               if (use_probe) {
                 Popup_Handler(Level);
+                do_z_clearance(Z_HOMING_HEIGHT);
                 corner_avg = 0;
-                #define PROBE_X_MIN _MAX(0 + corner_pos, X_MIN_POS + probe.offset.x, X_MIN_POS + PROBING_MARGIN) - probe.offset.x
-                #define PROBE_X_MAX _MIN((X_BED_SIZE + X_MIN_POS) - corner_pos, X_MAX_POS + probe.offset.x, X_MAX_POS - PROBING_MARGIN) - probe.offset.x
-                #define PROBE_Y_MIN _MAX(0 + corner_pos, Y_MIN_POS + probe.offset.y, Y_MIN_POS + PROBING_MARGIN) - probe.offset.y
-                #define PROBE_Y_MAX _MIN((Y_BED_SIZE + Y_MIN_POS) - corner_pos, Y_MAX_POS + probe.offset.y, Y_MAX_POS - PROBING_MARGIN) - probe.offset.y
-                corner_avg += probe.probe_at_point(PROBE_X_MIN, PROBE_Y_MIN, PROBE_PT_RAISE, 0, false);
-                corner_avg += probe.probe_at_point(PROBE_X_MIN, PROBE_Y_MAX, PROBE_PT_RAISE, 0, false);
-                corner_avg += probe.probe_at_point(PROBE_X_MAX, PROBE_Y_MAX, PROBE_PT_RAISE, 0, false);
-                corner_avg += probe.probe_at_point(PROBE_X_MAX, PROBE_Y_MIN, PROBE_PT_STOW, 0, false);
+                #define PROBE_X_MIN _MAX(corner_pos, PROBING_MARGIN, eeprom_settings.mesh_min_x) - probe.offset.x
+                #define PROBE_X_MAX _MIN(X_BED_SIZE - corner_pos, X_BED_SIZE - PROBING_MARGIN, eeprom_settings.mesh_max_x) - probe.offset.x
+                #define PROBE_Y_MIN _MAX(corner_pos, PROBING_MARGIN, eeprom_settings.mesh_min_y) - probe.offset.y
+                #define PROBE_Y_MAX _MIN(Y_BED_SIZE - corner_pos, Y_BED_SIZE - PROBING_MARGIN, eeprom_settings.mesh_max_y) - probe.offset.y
+                zval = probe.probe_at_point(PROBE_X_MIN, PROBE_Y_MIN, PROBE_PT_RAISE, 0, false);
+                const char * MSG_UNREACHABLE = "Position unreachable. Check Probe Offsets and Bed Screw Inset.";
+                if (isnan(zval)) {
+                    Update_Status(MSG_UNREACHABLE);
+                    Redraw_Menu();
+                }
+                corner_avg += zval;
+                zval = probe.probe_at_point(PROBE_X_MIN, PROBE_Y_MAX, PROBE_PT_RAISE, 0, false);
+                if (isnan(zval)) {
+                    Update_Status(MSG_UNREACHABLE);
+                    Redraw_Menu();
+                }
+                corner_avg += zval;
+                zval = probe.probe_at_point(PROBE_X_MAX, PROBE_Y_MAX, PROBE_PT_RAISE, 0, false);
+                if (isnan(zval)) {
+                    Update_Status(MSG_UNREACHABLE);
+                    Redraw_Menu();
+                }
+                corner_avg += zval;
+                zval = probe.probe_at_point(PROBE_X_MAX, PROBE_Y_MIN, PROBE_PT_STOW, 0, false);
+                if (isnan(zval)) {
+                    Update_Status(MSG_UNREACHABLE);
+                    Redraw_Menu();
+                }
+                corner_avg += zval; 
                 corner_avg /= 4;
                 Redraw_Menu();
               }
@@ -1471,14 +1491,14 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             Popup_Handler(MoveWait);
             if (use_probe) {
               #if HAS_BED_PROBE
-                sprintf_P(cmd, PSTR("G0 F4000\nG0 Z10\nG0 X%s Y%s"), dtostrf(X_MAX_POS / 2.0f - probe.offset.x, 1, 3, str_1), dtostrf(Y_MAX_POS / 2.0f - probe.offset.y, 1, 3, str_2));
+                sprintf_P(cmd, PSTR("G0 F4000\nG0 Z10\nG0 X%s Y%s"), dtostrf((PROBE_X_MIN + PROBE_X_MAX) / 2.0f, 1, 3, str_1), dtostrf((PROBE_Y_MIN + PROBE_Y_MAX) / 2.0f, 1, 3, str_2));
                 gcode.process_subcommands_now(cmd);
                 planner.synchronize();
                 Popup_Handler(ManualProbing);
               #endif
             }
             else {
-              sprintf_P(cmd, PSTR("G0 F4000\nG0 Z10\nG0 X%s Y%s\nG0 F300 Z%s"), dtostrf((X_BED_SIZE + X_MIN_POS) / 2.0f, 1, 3, str_1), dtostrf((Y_BED_SIZE + Y_MIN_POS) / 2.0f, 1, 3, str_2), dtostrf(mlev_z_pos, 1, 3, str_3));
+              sprintf_P(cmd, PSTR("G0 F4000\nG0 Z10\nG0 X%s Y%s\nG0 F300 Z%s"), dtostrf(X_BED_SIZE / 2.0f, 1, 3, str_1), dtostrf(Y_BED_SIZE / 2.0f, 1, 3, str_2), dtostrf(mlev_z_pos, 1, 3, str_3));
               gcode.process_subcommands_now(cmd);
               planner.synchronize();
               Redraw_Menu();
@@ -1757,7 +1777,8 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define CONTROL_TEMP (CONTROL_BACK + 1)
       #define CONTROL_MOTION (CONTROL_TEMP + 1)
       #define CONTROL_FWRETRACT (CONTROL_MOTION + ENABLED(FWRETRACT))
-      #define CONTROL_VISUAL (CONTROL_FWRETRACT + 1)
+      #define CONTROL_PARKMENU (CONTROL_FWRETRACT + ENABLED(NOZZLE_PARK_FEATURE, JYENHANCED))
+      #define CONTROL_VISUAL (CONTROL_PARKMENU + 1)
       #define CONTROL_ADVANCED (CONTROL_VISUAL + 1)
       #define CONTROL_SAVE (CONTROL_ADVANCED + ENABLED(EEPROM_SETTINGS))
       #define CONTROL_RESTORE (CONTROL_SAVE + ENABLED(EEPROM_SETTINGS))
@@ -1791,6 +1812,14 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             Draw_Menu_Item(row, ICON_StepE, GET_TEXT_F(MSG_AUTORETRACT), nullptr, true);
           else
             Draw_Menu(FwRetraction);
+          break;
+        #endif
+        #if ENABLED(NOZZLE_PARK_FEATURE) && JYENHANCED
+          case CONTROL_PARKMENU:
+          if (draw)
+            Draw_Menu_Item(row, ICON_ParkPos, GET_TEXT_F(MSG_FILAMENT_PARK_ENABLED), nullptr, true);
+          else
+            Draw_Menu(Parkmenu);
           break;
         #endif
         case CONTROL_VISUAL:
@@ -2384,7 +2413,8 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define MOTION_ACCEL (MOTION_SPEED + 1)
       #define MOTION_JERK (MOTION_ACCEL + ENABLED(HAS_CLASSIC_JERK))
       #define MOTION_STEPS (MOTION_JERK + 1)
-      #define MOTION_FLOW (MOTION_STEPS + ENABLED(HAS_HOTEND))
+      #define MOTION_INVERT_E0 (MOTION_STEPS + (ENABLED(HAS_HOTEND) && JYENHANCED))
+      #define MOTION_FLOW (MOTION_INVERT_E0 + ENABLED(HAS_HOTEND))
       #define MOTION_TOTAL MOTION_FLOW
 
       switch (item) {
@@ -2427,6 +2457,19 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             Draw_Menu(Steps);
           break;
         #if HAS_HOTEND
+          #if JYENHANCED
+            case MOTION_INVERT_E0:
+              if (draw) {
+                Draw_Menu_Item(row, ICON_Motion, F("Invert Extruder"));
+                Draw_Checkbox(row, eeprom_settings.Invert_E0);
+              }
+              else {
+                eeprom_settings.Invert_E0 = !eeprom_settings.Invert_E0;
+                DWIN_Invert_E0();
+                Draw_Checkbox(row, eeprom_settings.Invert_E0);
+              }
+              break;
+          #endif
           case MOTION_FLOW:
             if (draw) {
               Draw_Menu_Item(row, ICON_Speed, F("Flow Rate"));
@@ -2531,6 +2574,51 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         }
         break;
     #endif
+
+    #if BOTH(NOZZLE_PARK_FEATURE, JYENHANCED)
+      case Parkmenu:
+
+        #define PARKMENU_BACK 0
+        #define PARKMENU_POSX (PARKMENU_BACK + 1)
+        #define PARKMENU_POSY (PARKMENU_POSX + 1)
+        #define PARKMENU_POSZ (PARKMENU_POSY + 1)
+        #define PARKMENU_TOTAL PARKMENU_POSZ
+
+        switch (item) {
+          case PARKMENU_BACK:
+            if (draw)
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
+            else
+              Draw_Menu(Control, CONTROL_PARKMENU);
+            break;
+          case PARKMENU_POSX:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_ParkPosX, F("Park X Position"));
+              Draw_Float(eeprom_settings.Park_point.x, row, false, 1);
+            }
+            else
+              Modify_Value(eeprom_settings.Park_point.x, 0, X_MAX_POS, 1);
+            break;
+          case PARKMENU_POSY:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_ParkPosY, F("Park Y Position"));
+              Draw_Float(eeprom_settings.Park_point.y, row, false, 1);
+            }
+            else
+              Modify_Value(eeprom_settings.Park_point.y, 0, Y_MAX_POS, 1);
+            break;
+          case PARKMENU_POSZ:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_ParkPosZ, F("Park Z Raise"));
+              Draw_Float(eeprom_settings.Park_point.z, row, false, 1);
+            }
+            else
+              Modify_Value(eeprom_settings.Park_point.z, MIN_PARK_POINT_Z, Z_MAX_POS, 1);
+            break;
+        }
+      break;
+    #endif
+
 
     case HomeOffsets:
 
@@ -2950,7 +3038,8 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
 
       #define ADVANCED_BACK 0
       #define ADVANCED_BEEPER (ADVANCED_BACK + ENABLED(SOUND_MENU_ITEM))
-      #define ADVANCED_PROBE (ADVANCED_BEEPER + ENABLED(HAS_BED_PROBE))
+      #define ADVANCED_PHYSICAL (ADVANCED_BEEPER + ENABLED(JYENHANCED))
+      #define ADVANCED_PROBE (ADVANCED_PHYSICAL + ENABLED(HAS_BED_PROBE))
       #define ADVANCED_CORNER (ADVANCED_PROBE + 1)
       #define ADVANCED_LA (ADVANCED_CORNER + ENABLED(LIN_ADVANCE))
       #define ADVANCED_LOAD (ADVANCED_LA + ENABLED(ADVANCED_PAUSE_FEATURE))
@@ -2981,6 +3070,17 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             else {
               ui.buzzer_enabled = !ui.buzzer_enabled;
               Draw_Checkbox(row, ui.buzzer_enabled);
+            }
+            break;
+        #endif
+
+        #if JYENHANCED
+          case ADVANCED_PHYSICAL:
+            if (draw)
+              Draw_Menu_Item(row, ICON_PhySet, F("Physical Settings"), nullptr, true);
+            else {
+              Update_Status("Warning! increase X/Y max position before increase bed size.");
+              Draw_Menu(PhySetMenu);
             }
             break;
         #endif
@@ -3117,6 +3217,102 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         #endif
       }
       break;
+
+    #if JYENHANCED
+      case PhySetMenu:
+
+        #define PHYSET_BACK 0
+        #define PHYSET_XBEDSIZE (PHYSET_BACK + 1)
+        #define PHYSET_YBEDSIZE (PHYSET_XBEDSIZE + 1)
+        #define PHYSET_XMINPOS (PHYSET_YBEDSIZE + 1)
+        #define PHYSET_YMINPOS (PHYSET_XMINPOS + 1)
+        #define PHYSET_XMAXPOS (PHYSET_YMINPOS + 1)
+        #define PHYSET_YMAXPOS (PHYSET_XMAXPOS + 1)
+        #define PHYSET_ZMAXPOS (PHYSET_YMAXPOS + 1)
+        #define PHYSET_TOTAL PHYSET_ZMAXPOS
+
+        switch (item) {
+          case PHYSET_BACK:
+            if (draw)
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
+            else
+              Draw_Menu(Advanced, ADVANCED_PHYSICAL);
+            break;
+          case PHYSET_XBEDSIZE:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_BedSizeX, F("X bed size"));
+              Draw_Float(eeprom_settings.x_bed_size, row, false, 1);
+            }
+            else {
+              temp_val.axis = NO_AXIS_ENUM;
+              Modify_Value(eeprom_settings.x_bed_size, X_BED_MIN, X_MAX_POS, 1);
+            }
+            break;
+          case PHYSET_YBEDSIZE:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_BedSizeY, F("Y bed size"));
+              Draw_Float(eeprom_settings.y_bed_size, row, false, 1);
+            }
+            else {
+              temp_val.axis = NO_AXIS_ENUM;
+              Modify_Value(eeprom_settings.y_bed_size, Y_BED_MIN, Y_MAX_POS, 1);
+            }
+            break;
+          case PHYSET_XMINPOS:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_MaxPosX, F("X min position"));
+              Draw_Float(eeprom_settings.x_min_pos, row, false, 1);
+            }
+            else {
+              temp_val.axis = X_AXIS;
+              Modify_Value(eeprom_settings.x_min_pos, -500, 500, 1);
+            }
+            break;
+          case PHYSET_YMINPOS:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_MaxPosY, F("Y min position"));
+              Draw_Float(eeprom_settings.y_min_pos, row, false, 1);
+            }
+            else {
+              temp_val.axis = Y_AXIS;
+              Modify_Value(eeprom_settings.y_min_pos, -500, 500, 1);
+            }
+            break;
+          case PHYSET_XMAXPOS:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_MaxPosX, F("X max position"));
+              Draw_Float(eeprom_settings.x_max_pos, row, false, 1);
+            }
+            else {
+              TERN_(NOZZLE_PARK_FEATURE, temp_val.last_pos = eeprom_settings.x_max_pos);
+              temp_val.axis = X_AXIS;
+              Modify_Value(eeprom_settings.x_max_pos, X_BED_MIN, 999, 1);
+            }
+            break;
+          case PHYSET_YMAXPOS:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_MaxPosY, F("Y max position"));
+              Draw_Float(eeprom_settings.y_max_pos, row, false, 1);
+            }
+            else {
+              TERN_(NOZZLE_PARK_FEATURE, temp_val.last_pos = eeprom_settings.y_max_pos);
+              temp_val.axis = Y_AXIS;
+              Modify_Value(eeprom_settings.y_max_pos, Y_BED_MIN, 999, 1);
+            }
+            break;
+          case PHYSET_ZMAXPOS:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_MaxPosZ, F("Z max position"));
+              Draw_Float(eeprom_settings.z_max_pos, row, false, 1);
+            }
+            else {
+              temp_val.axis = Z_AXIS;
+              Modify_Value(eeprom_settings.z_max_pos, 100, 999, 1);
+            }
+            break;
+        }
+      break;
+    #endif
 
     #if HAS_BED_PROBE
       case ProbeMenu:
@@ -3260,7 +3456,13 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
               Draw_Menu_Item(INFO_PRINTTIME, ICON_PrintTime, row1, row2, false, true);
             #endif
 
+            #if JYENHANCED
+              sprintf_P(row1, PSTR("%ix%ix%i"), eeprom_settings.x_bed_size, eeprom_settings.y_bed_size, eeprom_settings.z_max_pos);
+              Draw_Menu_Item(INFO_SIZE, ICON_PrintSize, F(row1), nullptr, false, true);
+            #else
+              #define MACHINE_SIZE STRINGIFY(X_BED_SIZE) "x" STRINGIFY(Y_BED_SIZE) "x" STRINGIFY(Z_MAX_POS)
             Draw_Menu_Item(INFO_SIZE, ICON_PrintSize, F(MACHINE_SIZE), nullptr, false, true);
+            #endif
             Draw_Menu_Item(INFO_VERSION, ICON_Version, F(SHORT_BUILD_VERSION), nullptr, false, true);
             Draw_Menu_Item(INFO_CONTACT, ICON_Contact, F(CORP_WEBSITE), nullptr, false, true);
           }
@@ -4286,6 +4488,12 @@ FSTR_P CrealityDWINClass::Get_Menu_Title(uint8_t menu) {
     #endif
     case Tune:              return F("Tune");
     case PreheatHotend:     return F("Preheat Hotend");
+    #if JYENHANCED
+      #if ENABLED(NOZZLE_PARK_FEATURE)
+        case Parkmenu:      return GET_TEXT_F(MSG_FILAMENT_PARK_ENABLED);
+      #endif
+      case PhySetMenu:      return F("Physical Settings");
+    #endif
   }
   return F("");
 }
@@ -4365,6 +4573,12 @@ uint8_t CrealityDWINClass::Get_Menu_Size(uint8_t menu) {
     case Tune:              return TUNE_TOTAL;
     case PreheatHotend:     return PREHEATHOTEND_TOTAL;
     case ColorSettings:     return COLORSETTINGS_TOTAL;
+    #if JYENHANCED
+      #if ENABLED(NOZZLE_PARK_FEATURE) 
+        case Parkmenu:        return PARKMENU_TOTAL;
+      #endif
+      case PhySetMenu:      return PHYSET_TOTAL;
+    #endif
   }
   return 0;
 }
@@ -4397,12 +4611,12 @@ void CrealityDWINClass::Popup_Handler(PopupID popupid, bool option/*=false*/) {
   }
 }
 
-void CrealityDWINClass::Confirm_Handler(PopupID popupid) {
+void CrealityDWINClass::Confirm_Handler(PopupID popupid, bool option/*=false*/) {
   popup = popupid;
   switch (popupid) {
     case FilInsert:   Draw_Popup(F("Insert Filament"), F("Press to Continue"), F(""), Confirm); break;
     case HeaterTime:  Draw_Popup(F("Heater Timed Out"), F("Press to Reheat"), F(""), Confirm); break;
-    case UserInput:   Draw_Popup(F("Waiting for Input"), F("Press to Continue"), F(""), Confirm); break;
+    case UserInput:   Draw_Popup(option ? GET_TEXT_F(MSG_STOPPED) : F("Waiting for Input"), GET_TEXT_F(MSG_ADVANCED_PAUSE_WAITING), F(""), Confirm); break;
     case LevelError:  Draw_Popup(F("Couldn't enable Leveling"), F("(Valid mesh must exist)"), F(""), Confirm); break;
     case InvalidMesh: Draw_Popup(F("Valid mesh must exist"), F("before tuning can be"), F("performed"), Confirm); break;
     default: break;
@@ -4519,6 +4733,21 @@ void CrealityDWINClass::Value_Control() {
     }
     if (valuepointer == &planner.flow_percentage[0])
       planner.refresh_e_factor(0);
+
+    #if JYENHANCED
+      if (active_menu == PhySetMenu) {
+        JYEnhanced.ApplyPhySet();
+        #if ENABLED(NOZZLE_PARK_FEATURE)
+          if (valuepointer == &eeprom_settings.x_max_pos) eeprom_settings.Park_point.x = eeprom_settings.Park_point.x + (eeprom_settings.x_max_pos - temp_val.last_pos); 
+          if (valuepointer == &eeprom_settings.y_max_pos) eeprom_settings.Park_point.y = eeprom_settings.Park_point.y + (eeprom_settings.y_max_pos - temp_val.last_pos);
+        #endif
+        if (temp_val.axis == NO_AXIS_ENUM) {
+        sprintf_P(cmd, PSTR("Warning! set X/Y max position according to the new bed size: %ix%i"), eeprom_settings.x_bed_size, eeprom_settings.y_bed_size);
+        Update_Status(cmd);
+        }
+      }
+    #endif
+
     if (funcpointer) funcpointer();
     return;
   }
@@ -5284,6 +5513,35 @@ void CrealityDWINClass::Reset_Settings() {
   TERN_(SOUND_MENU_ITEM, ui.buzzer_enabled = true);
   TERN_(BAUD_RATE_GCODE, eeprom_settings.Baud115k = false);
   TERN_(FWRETRACT, Auto_FW_Retract = fwretract.autoretract_enabled);
+  #if JYENHANCED
+    eeprom_settings.Invert_E0 = DEF_INVERT_E0_DIR;
+    DWIN_Invert_E0();
+    #if ENABLED(NOZZLE_PARK_FEATURE)
+      eeprom_settings.Park_point = xyz_int_t DEF_NOZZLE_PARK_POINT;
+    #endif
+    eeprom_settings.x_bed_size = DEF_X_BED_SIZE;
+    eeprom_settings.y_bed_size = DEF_Y_BED_SIZE;
+    eeprom_settings.x_min_pos  = DEF_X_MIN_POS;
+    eeprom_settings.y_min_pos  = DEF_Y_MIN_POS;
+    eeprom_settings.x_max_pos  = DEF_X_MAX_POS;
+    eeprom_settings.y_max_pos  = DEF_Y_MAX_POS;
+    eeprom_settings.z_max_pos  = DEF_Z_MAX_POS;
+    #if HAS_MESH
+      eeprom_settings.mesh_min_x = DEF_MESH_MIN_X;
+      eeprom_settings.mesh_max_x = DEF_MESH_MAX_X;
+      eeprom_settings.mesh_min_y = DEF_MESH_MIN_Y;
+      eeprom_settings.mesh_max_y = DEF_MESH_MAX_Y;
+    #endif
+    #if HAS_BED_PROBE
+      eeprom_settings.probing_margin = DEF_PROBING_MARGIN;
+      eeprom_settings.zprobefeedfast = DEF_Z_PROBE_FEEDRATE_FAST;
+      eeprom_settings.zprobefeedslow = DEF_Z_PROBE_FEEDRATE_SLOW;
+    #endif
+    #if ENABLED(ADVANCED_PAUSE_FEATURE)
+      eeprom_settings.fil_unload_feedrate = DEF_FILAMENT_CHANGE_UNLOAD_FEEDRATE;
+      eeprom_settings.fil_fast_load_feedrate = DEF_FILAMENT_CHANGE_FAST_LOAD_FEEDRATE;
+    #endif
+  #endif
   Redraw_Screen();
 }
 
@@ -5366,5 +5624,93 @@ void CrealityDWINClass::RebootPrinter() {
   DWIN_RebootScreen();
   HAL_reboot();
 }
+
+#if JYENHANCED
+  // Invert Extruder
+  void CrealityDWINClass::DWIN_Invert_E0() {
+    stepper.disable_e_steppers();
+    current_position.e = 0;
+    sync_plan_position_e();
+  }
+#endif
+
+//=============================================================================
+// Extended G-CODES (From DWIN UI Enhanced)
+//=============================================================================
+
+void  CrealityDWINClass::DWIN_CError() {
+  SERIAL_ECHO_START();
+  SERIAL_ECHOLNPGM(" This g-code is not implemented in firmware");
+}
+
+// Cancel a Wait for User without an Emergecy Parser
+void  CrealityDWINClass::DWIN_C108() { 
+  #if DEBUG_DWIN
+    SERIAL_ECHOLNPGM(F("Wait for user was "), wait_for_user);
+    SERIAL_ECHOLNPGM(F("Checkkey was "), checkkey);
+  #endif
+  wait_for_user = false;
+  AudioFeedback();
+}
+
+// lock/unlock screen
+void CrealityDWINClass:: DWIN_C510() {
+  if (parser.seenval('U') && parser.value_int()) CrealityDWIN.DWIN_UnLockScreen();
+  else CrealityDWIN.DWIN_LockScreen();
+}
+
+#if DEBUG_DWIN
+  void  CrealityDWINClass::DWIN_C997() {
+    #if ENABLED(POWER_LOSS_RECOVERY)
+      if (IS_SD_PRINTING() && recovery.enabled) {
+        planner.synchronize();
+        recovery.save(true);
+      }
+    #endif
+    DWIN_RebootScreen();
+    SERIAL_ECHOLNPGM("Simulating a printer freeze");
+    while (1) {};
+  }
+#endif
+
+// Special Creality DWIN GCodes
+void  CrealityDWINClass::DWIN_Gcode(const int16_t codenum) {
+  switch(codenum) {
+    case 108: DWIN_C108(); break;           // Cancel a Wait for User without an Emergecy Parser
+    case 510: DWIN_C510(); break;           // lock screen
+    #if DEBUG_DWIN
+      case 997: DWIN_C997(); break;         // Simulate a printer freeze
+    #endif
+    #if JYENHANCED
+      // #if HAS_MESH
+      //   case 29: JYEnhanced.C29(); break;        // Set amount of grid points of the mesh leveling
+      // #endif
+      case 100: JYEnhanced.C100(); break;        // Change Physical minimum limits
+      case 101: JYEnhanced.C101(); break;        // Change Physical maximums limits
+      case 102: JYEnhanced.C102(); break;        // Change Bed size
+      #if ENABLED(NOZZLE_PARK_FEATURE)
+        case 125: JYEnhanced.C125(); break;      // Set park position
+      #endif
+      case 562: JYEnhanced.C562(); break;        // Invert Extruder
+      #if HAS_BED_PROBE
+        case 851: JYEnhanced.C851(); break;      // Set probing margin and z feed rate of the probe mesh leveling
+      #endif
+    #endif
+    default: DWIN_CError(); break;
+  }
+}
+
+//=============================================================================
+// JYers Enhanced by LCH-77
+//=============================================================================
+
+#if JYENHANCED
+  #if HAS_MESH
+    void CrealityDWINClass::ApplyMeshLimits() {
+      set_bed_leveling_enabled(false);
+      reset_bed_level();
+    }
+  #endif
+#endif
 
 #endif // DWIN_CREALITY_LCD_JYERSUI
