@@ -1,8 +1,8 @@
 /**
  * JYERSUI Enhanced
  * Author: LCH-77
- * Version: 1.1
- * Date: 2022/01/31
+ * Version: 1.2
+ * Date: 2022/02/06
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -26,35 +26,8 @@
 #include "dwin.h"
 #include "../../../gcode/gcode.h"
 
-#include "jyenhanced.h"
-#include "../../../module/motion.h"
-#include "../../../module/endstops.h"
-
 #if HAS_BED_PROBE
   #include "../../../module/probe.h"
-#endif
-
-#if ENABLED(AUTO_BED_LEVELING_UBL)
-  #include "../../../feature/bedlevel/bedlevel.h"
-  #include "../../../feature/bedlevel/ubl/ubl.h"
-#endif
-
-#if ENABLED(AUTO_BED_LEVELING_UBL)
-
-  float unified_bed_leveling::get_mesh_x(const uint8_t i) {
-    return (eeprom_settings.mesh_min_x) + i * (float(eeprom_settings.mesh_max_x - (eeprom_settings.mesh_min_x)) / (eeprom_settings.grid_max_points - 1));
-  }
-  float unified_bed_leveling::get_mesh_y(const uint8_t i) {
-    return (eeprom_settings.mesh_min_y) + i * (float(eeprom_settings.mesh_max_y - (eeprom_settings.mesh_min_y)) / (eeprom_settings.grid_max_points - 1));
-  } 
-
-  typedef struct { int sx, ex, sy, ey; bool yfirst; } smart_fill_info;
-
-#endif // AUTO_BED_LEVELING_UBL
-
-#if ENABLED(AUTO_BED_LEVELING_BILINEAR)
-  #include "../../../feature/bedlevel/bedlevel.h"
-  #include "../../../feature/bedlevel/abl/abl.h"
 #endif
 
 #if HAS_BED_PROBE

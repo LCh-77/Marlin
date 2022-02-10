@@ -1,8 +1,8 @@
 /**
  * JYERSUI Enhanced
  * Author: LCH-77
- * Version: 1.1
- * Date: 2022/01/31
+ * Version: 1.2
+ * Date: 2022/02/06
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -43,32 +43,35 @@ constexpr int16_t DEF_Z_MAX_POS = Z_MAX_POS;
 #define DEF_NOZZLE_PARK_POINT {240, 220, 20}
 #define MIN_PARK_POINT_Z 10
 
-
-#if !EITHER(MESH_BED_LEVELING, AUTO_BED_LEVELING_UBL)
+#if HAS_MESH
   #ifndef MESH_INSET
     #define MESH_INSET 25
   #endif
-  // Boundaries for Cartesian probing based on set limits
-  #define _MESH_MIN_X MESH_INSET
-  #define _MESH_MIN_Y MESH_INSET
-  #define _MESH_MAX_X X_BED_SIZE - (MESH_INSET)
-  #define _MESH_MAX_Y Y_BED_SIZE - (MESH_INSET)
-#endif
+  #ifndef MESH_MIN_X
+    #define MESH_MIN_X MESH_INSET
+  #endif
+  #ifndef MESH_MIN_Y
+    #define MESH_MIN_Y MESH_INSET
+  #endif
+  #ifndef MESH_MAX_X
+    #define MESH_MAX_X  X_BED_SIZE - (MESH_INSET)
+  #endif
+  #ifndef MESH_MAX_Y
+    #define MESH_MAX_Y  X_BED_SIZE - (MESH_INSET)
+  #endif
 
-#if HAS_MESH
-  constexpr int16_t DEF_MESH_MIN_X = _MESH_MIN_X;
-  constexpr int16_t DEF_MESH_MAX_X = _MESH_MAX_X;
-  constexpr int16_t DEF_MESH_MIN_Y = _MESH_MIN_Y;
-  constexpr int16_t DEF_MESH_MAX_Y = _MESH_MAX_Y;
+  constexpr int16_t DEF_MESH_MIN_X = MESH_MIN_X;
+  constexpr int16_t DEF_MESH_MAX_X = MESH_MAX_X;
+  constexpr int16_t DEF_MESH_MIN_Y = MESH_MIN_Y;
+  constexpr int16_t DEF_MESH_MAX_Y = MESH_MAX_Y;
   #define MIN_MESH_INSET 5
   #define MAX_MESH_INSET X_BED_SIZE
-
-  constexpr int16_t DEF_PROBING_MARGIN = PROBING_MARGIN;
-  #define MIN_PROBE_MARGIN 5
-  #define MAX_PROBE_MARGIN 60
 #endif
 
 #if HAS_BED_PROBE
+  constexpr int16_t DEF_PROBING_MARGIN = PROBING_MARGIN;
+  #define MIN_PROBE_MARGIN 5
+  #define MAX_PROBE_MARGIN 60  
   #define MIN_Z_PROBE_FEEDRATE 60
   #define MAX_Z_PROBE_FEEDRATE 1200
   constexpr int16_t DEF_Z_PROBE_FEEDRATE_FAST = Z_PROBE_FEEDRATE_FAST;
