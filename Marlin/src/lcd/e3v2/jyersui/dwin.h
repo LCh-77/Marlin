@@ -27,7 +27,7 @@
  *
  * JYERSUI Enhanced by LCH-77
  * Version: 1.2
- * Date: Feb 12, 2022
+ * Date: Feb 2, 2022
  */
 
 #include "dwin_defines.h"
@@ -161,7 +161,7 @@ public:
   static void Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw=true);
 
   static void Popup_Handler(PopupID popupid, bool option = false);
-  static void Confirm_Handler(PopupID popupid);
+  static void Confirm_Handler(PopupID popupid, bool option = false);
 
   static void Main_Menu_Control();
   static void Menu_Control();

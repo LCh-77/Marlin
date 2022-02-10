@@ -30,6 +30,9 @@
  */
 
 #include "../../../inc/MarlinConfigPre.h"
+
+#if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
+
 #include "dwin_defines.h"
 
 #if HAS_ESDIAG
@@ -105,3 +108,4 @@ void ESDiagClass::Update() {
 }
 
 #endif  // HAS_ES_DIAG
+#endif  // DWIN_CREALITY_LCD_JYERSUI

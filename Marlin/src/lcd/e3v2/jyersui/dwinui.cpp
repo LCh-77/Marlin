@@ -23,10 +23,11 @@
 /**
  * DWIN UI Enhanced implementation
  * Author: Miguel A. Risco-Castillo (MRISCOC)
- * Version: 3.11.1
- * Date: 2022/01/19
+ * Version: 3.13.1
+ * Date: 2022/02/08
  *
  * Modded for JYERSUI by LCH-77
+ * Date: 2022/02/09
  */
 
 #include "../../../inc/MarlinConfigPre.h"
@@ -47,9 +48,11 @@ uint16_t DWINUI::textcolor = Def_Text_Color;
 uint16_t DWINUI::backcolor = Def_Background_Color;
 uint8_t  DWINUI::font = font8x16;
 
+FSTR_P const DWINUI::Author = F(STRING_CONFIG_H_AUTHOR);
+
 void DWINUI::init() {
   DEBUG_ECHOPGM("\r\nDWIN handshake ");
-  delay(750);   // Delay here or init later in the boot process
+  delay(750);   // Delay for wait to wakeup screen
   const bool success = DWIN_Handshake();
   if (success) DEBUG_ECHOLNPGM("ok."); else DEBUG_ECHOLNPGM("error.");
   DWIN_Frame_SetDir(1);
@@ -174,21 +177,6 @@ void DWINUI::Draw_String(uint16_t color, const char * const string, uint16_t rli
   MoveBy(strlen(string) * fontWidth(font), 0);
 }
 
-// Draw a signed floating point number
-//  bShow: true=display background color; false=don't display background color
-//  zeroFill: true=zero fill; false=no zero fill
-//  zeroMode: 1=leading 0 displayed as 0; 0=leading 0 displayed as a space
-//  size: Font size
-//  bColor: Background color
-//  iNum: Number of whole digits
-//  fNum: Number of decimal digits
-//  x/y: Upper-left point
-//  value: Float value
-void DWINUI::Draw_Signed_Float(uint8_t bShow, bool zeroFill, uint8_t zeroMode, uint8_t size, uint16_t color, uint16_t bColor, uint8_t iNum, uint8_t fNum, uint16_t x, uint16_t y, float value) {
-  DWIN_Draw_FloatValue(bShow, zeroFill, zeroMode, size, color, bColor, iNum, fNum, x, y, value < 0 ? -value : value);
-  DWIN_Draw_String(bShow, size, color, bColor, x - 6, y, value < 0 ? F("-") : F(" "));
-}
-
 // Draw a circle
 //  color: circle color
 //  x: the abscissa of the center of the circle
@@ -254,7 +242,7 @@ uint16_t DWINUI::RainbowInt(int16_t val, int16_t minv, int16_t maxv) {
   const uint8_t maxB = 28;
   const uint8_t maxR = 28;
   const uint8_t maxG = 38;
-  const int16_t limv = _MAX(abs(minv), abs(maxv));
+  const int16_t limv = _MAX(abs(minv), abs(maxv)); 
   float n;
   if (minv>=0) {
     n = (float)(val-minv)/(maxv-minv);

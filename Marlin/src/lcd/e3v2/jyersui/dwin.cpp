@@ -33,9 +33,9 @@
 
 #if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
 
+#include "dwin_defines.h"
 #include "dwin.h"
 #include "dwinui.h"
-#include "dwin_defines.h"
 
 #include "../../marlinui.h"
 #include "../../../MarlinCore.h"
@@ -190,6 +190,7 @@ float zoffsetvalue = 0;
 uint8_t gridpoint;
 float corner_avg;
 float corner_pos;
+float zval;
 
 bool probe_deployed = false;
 
@@ -484,7 +485,7 @@ void CrealityDWINClass::Draw_Title(FSTR_P const ftitle) {
 void _Decorate_Menu_Item(uint8_t row, uint8_t icon, bool more) {
   if (icon) DWIN_ICON_Show(ICON, icon, 26, MBASE(row) - 3);   //Draw Menu Icon
   if (more) DWIN_ICON_Show(ICON, ICON_More, 226, MBASE(row) - 3); // Draw More Arrow
-  DWIN_Draw_Line(CrealityDWIN.GetColor(CrealityDWIN.eeprom_settings.menu_split_line, Line_Color, true), 16, MBASE(row) + 33, 256, MBASE(row) + 33); // Draw Menu Line
+  DWIN_Draw_Line(CrealityDWIN.GetColor(eeprom_settings.menu_split_line, Line_Color, true), 16, MBASE(row) + 33, 256, MBASE(row) + 33); // Draw Menu Line
 }
 
 void CrealityDWINClass::Draw_Menu_Item(uint8_t row, uint8_t icon/*=0*/, const char * label1, const char * label2, bool more/*=false*/, bool centered/*=false*/) {
@@ -892,8 +893,7 @@ void CrealityDWINClass::Draw_Status_Area(bool icons/*=false*/) {
     #endif
     if (zoffsetvalue != offset || icons) {
       offset = zoffsetvalue;
-      DWIN_Draw_FloatValue(true, true, 0, DWIN_FONT_STAT, GetColor(eeprom_settings.status_area_text, Color_White), Color_Bg_Black, 2, 2, 207, 417, (zoffsetvalue < 0 ? -zoffsetvalue : zoffsetvalue));
-      DWIN_Draw_String(true, DWIN_FONT_MENU, GetColor(eeprom_settings.status_area_text, Color_White), Color_Bg_Black, 205, 419, zoffsetvalue < 0 ? F("-") : F(" "));
+      DWINUI::Draw_Signed_Float(DWIN_FONT_STAT, GetColor(eeprom_settings.status_area_text, Color_White),Color_Bg_Black, 1, 2, 202, 417, zoffsetvalue);
     }
   #endif
 
@@ -923,23 +923,23 @@ void CrealityDWINClass::Draw_Status_Area(bool icons/*=false*/) {
   if (update_x) {
     x = current_position.x;
     if ((update_x = axis_should_home(X_AXIS) && ui.get_blink()))
-      DWIN_Draw_String(true, DWIN_FONT_MENU, GetColor(eeprom_settings.coordinates_text, Color_White), Color_Bg_Black, 35, 459, F("  -?-  "));
+      DWIN_Draw_String(true, DWIN_FONT_MENU, GetColor(eeprom_settings.coordinates_text, Color_White), Color_Bg_Black, 39, 459, F("  -?-  "));
     else
-      DWIN_Draw_FloatValue(true, true, 0, DWIN_FONT_MENU, GetColor(eeprom_settings.coordinates_text, Color_White), Color_Bg_Black, 3, 1, 35, 459, current_position.x);
+      DWINUI::Draw_Signed_Float(DWIN_FONT_MENU, GetColor(eeprom_settings.coordinates_text, Color_White), Color_Bg_Black, 3, 1, 31, 459, current_position.x);
   }
   if (update_y) {
     y = current_position.y;
     if ((update_y = axis_should_home(Y_AXIS) && ui.get_blink()))
-      DWIN_Draw_String(true, DWIN_FONT_MENU, GetColor(eeprom_settings.coordinates_text, Color_White), Color_Bg_Black, 120, 459, F("  -?-  "));
+      DWIN_Draw_String(true, DWIN_FONT_MENU, GetColor(eeprom_settings.coordinates_text, Color_White), Color_Bg_Black, 124, 459, F("  -?-  "));
     else
-      DWIN_Draw_FloatValue(true, true, 0, DWIN_FONT_MENU, GetColor(eeprom_settings.coordinates_text, Color_White), Color_Bg_Black, 3, 1, 120, 459, current_position.y);
+      DWINUI::Draw_Signed_Float(DWIN_FONT_MENU, GetColor(eeprom_settings.coordinates_text, Color_White), Color_Bg_Black, 3, 1, 116, 459, current_position.y);
   }
   if (update_z) {
     z = current_position.z;
     if ((update_z = axis_should_home(Z_AXIS) && ui.get_blink()))
       DWIN_Draw_String(true, DWIN_FONT_MENU, GetColor(eeprom_settings.coordinates_text, Color_White), Color_Bg_Black, 205, 459, F("  -?-  "));
     else
-      DWIN_Draw_FloatValue(true, true, 0, DWIN_FONT_MENU, GetColor(eeprom_settings.coordinates_text, Color_White), Color_Bg_Black, 3, 2, 205, 459, (current_position.z>=0) ? current_position.z : 0);
+      DWINUI::Draw_Signed_Float(DWIN_FONT_MENU, GetColor(eeprom_settings.coordinates_text, Color_White), Color_Bg_Black, 3, 2, 197, 459, current_position.z);
   }
   DWIN_UpdateLCD();
 }
@@ -1365,15 +1365,37 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
               Draw_Checkbox(row, use_probe);
               if (use_probe) {
                 Popup_Handler(Level);
+                do_z_clearance(Z_HOMING_HEIGHT);
                 corner_avg = 0;
-                #define PROBE_X_MIN _MAX(0 + corner_pos, X_MIN_POS + probe.offset.x, X_MIN_POS + PROBING_MARGIN) - probe.offset.x
-                #define PROBE_X_MAX _MIN((X_BED_SIZE + X_MIN_POS) - corner_pos, X_MAX_POS + probe.offset.x, X_MAX_POS - PROBING_MARGIN) - probe.offset.x
-                #define PROBE_Y_MIN _MAX(0 + corner_pos, Y_MIN_POS + probe.offset.y, Y_MIN_POS + PROBING_MARGIN) - probe.offset.y
-                #define PROBE_Y_MAX _MIN((Y_BED_SIZE + Y_MIN_POS) - corner_pos, Y_MAX_POS + probe.offset.y, Y_MAX_POS - PROBING_MARGIN) - probe.offset.y
-                corner_avg += probe.probe_at_point(PROBE_X_MIN, PROBE_Y_MIN, PROBE_PT_RAISE, 0, false);
-                corner_avg += probe.probe_at_point(PROBE_X_MIN, PROBE_Y_MAX, PROBE_PT_RAISE, 0, false);
-                corner_avg += probe.probe_at_point(PROBE_X_MAX, PROBE_Y_MAX, PROBE_PT_RAISE, 0, false);
-                corner_avg += probe.probe_at_point(PROBE_X_MAX, PROBE_Y_MIN, PROBE_PT_STOW, 0, false);
+                #define PROBE_X_MIN _MAX(corner_pos, PROBING_MARGIN, eeprom_settings.mesh_min_x) - probe.offset.x
+                #define PROBE_X_MAX _MIN(X_BED_SIZE - corner_pos, X_BED_SIZE - PROBING_MARGIN, eeprom_settings.mesh_max_x) - probe.offset.x
+                #define PROBE_Y_MIN _MAX(corner_pos, PROBING_MARGIN, eeprom_settings.mesh_min_y) - probe.offset.y
+                #define PROBE_Y_MAX _MIN(Y_BED_SIZE - corner_pos, Y_BED_SIZE - PROBING_MARGIN, eeprom_settings.mesh_max_y) - probe.offset.y
+                zval = probe.probe_at_point(PROBE_X_MIN, PROBE_Y_MIN, PROBE_PT_RAISE, 0, false);
+                const char * MSG_UNREACHABLE = "Position unreachable. Check Probe Offsets and Bed Screw Inset.";
+                if (isnan(zval)) {
+                    Update_Status(MSG_UNREACHABLE);
+                    Redraw_Menu();
+                }
+                corner_avg += zval;
+                zval = probe.probe_at_point(PROBE_X_MIN, PROBE_Y_MAX, PROBE_PT_RAISE, 0, false);
+                if (isnan(zval)) {
+                    Update_Status(MSG_UNREACHABLE);
+                    Redraw_Menu();
+                }
+                corner_avg += zval;
+                zval = probe.probe_at_point(PROBE_X_MAX, PROBE_Y_MAX, PROBE_PT_RAISE, 0, false);
+                if (isnan(zval)) {
+                    Update_Status(MSG_UNREACHABLE);
+                    Redraw_Menu();
+                }
+                corner_avg += zval;
+                zval = probe.probe_at_point(PROBE_X_MAX, PROBE_Y_MIN, PROBE_PT_STOW, 0, false);
+                if (isnan(zval)) {
+                    Update_Status(MSG_UNREACHABLE);
+                    Redraw_Menu();
+                }
+                corner_avg += zval; 
                 corner_avg /= 4;
                 Redraw_Menu();
               }
@@ -1471,14 +1493,14 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             Popup_Handler(MoveWait);
             if (use_probe) {
               #if HAS_BED_PROBE
-                sprintf_P(cmd, PSTR("G0 F4000\nG0 Z10\nG0 X%s Y%s"), dtostrf(X_MAX_POS / 2.0f - probe.offset.x, 1, 3, str_1), dtostrf(Y_MAX_POS / 2.0f - probe.offset.y, 1, 3, str_2));
+                sprintf_P(cmd, PSTR("G0 F4000\nG0 Z10\nG0 X%s Y%s"), dtostrf((PROBE_X_MIN + PROBE_X_MAX) / 2.0f, 1, 3, str_1), dtostrf((PROBE_Y_MIN + PROBE_Y_MAX) / 2.0f, 1, 3, str_2));
                 gcode.process_subcommands_now(cmd);
                 planner.synchronize();
                 Popup_Handler(ManualProbing);
               #endif
             }
             else {
-              sprintf_P(cmd, PSTR("G0 F4000\nG0 Z10\nG0 X%s Y%s\nG0 F300 Z%s"), dtostrf((X_BED_SIZE + X_MIN_POS) / 2.0f, 1, 3, str_1), dtostrf((Y_BED_SIZE + Y_MIN_POS) / 2.0f, 1, 3, str_2), dtostrf(mlev_z_pos, 1, 3, str_3));
+              sprintf_P(cmd, PSTR("G0 F4000\nG0 Z10\nG0 X%s Y%s\nG0 F300 Z%s"), dtostrf(X_BED_SIZE / 2.0f, 1, 3, str_1), dtostrf(Y_BED_SIZE / 2.0f, 1, 3, str_2), dtostrf(mlev_z_pos, 1, 3, str_3));
               gcode.process_subcommands_now(cmd);
               planner.synchronize();
               Redraw_Menu();
@@ -4397,12 +4419,12 @@ void CrealityDWINClass::Popup_Handler(PopupID popupid, bool option/*=false*/) {
   }
 }
 
-void CrealityDWINClass::Confirm_Handler(PopupID popupid) {
+void CrealityDWINClass::Confirm_Handler(PopupID popupid, bool option/*=false*/) {
   popup = popupid;
   switch (popupid) {
     case FilInsert:   Draw_Popup(F("Insert Filament"), F("Press to Continue"), F(""), Confirm); break;
     case HeaterTime:  Draw_Popup(F("Heater Timed Out"), F("Press to Reheat"), F(""), Confirm); break;
-    case UserInput:   Draw_Popup(F("Waiting for Input"), F("Press to Continue"), F(""), Confirm); break;
+    case UserInput:   Draw_Popup(option ? GET_TEXT_F(MSG_STOPPED) : F("Waiting for Input"), GET_TEXT_F(MSG_ADVANCED_PAUSE_WAITING), F(""), Confirm); break;
     case LevelError:  Draw_Popup(F("Couldn't enable Leveling"), F("(Valid mesh must exist)"), F(""), Confirm); break;
     case InvalidMesh: Draw_Popup(F("Valid mesh must exist"), F("before tuning can be"), F("performed"), Confirm); break;
     default: break;
