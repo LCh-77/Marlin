@@ -739,6 +739,13 @@ void unified_bed_leveling::shift_mesh_height() {
       SERIAL_ECHOLNPGM("Probing mesh point ", point_num, "/", GRID_MAX_POINTS, ".");
       TERN_(HAS_STATUS_MESSAGE, ui.status_printf(0, F(S_FMT " %i/%i"), GET_TEXT(MSG_PROBING_POINT), point_num, int(GRID_MAX_POINTS)));
 
+      #if JYENHANCED
+        if (temp_val.cancel_lev) {
+          SERIAL_ECHOLNPGM("\nMesh cancelled.\n");
+          break;
+        }
+      #endif
+
       #if HAS_MARLINUI_MENU
         if (ui.button_pressed()) {
           ui.quick_feedback(false); // Preserve button state for click-and-hold

@@ -23,27 +23,29 @@
 
 /**
  * lcd/e3v2/jyersui/dwin.h
+ * JYERSUI Author: Jacob Myers
+ *
+ * JYERSUI Enhanced by LCH-77
+ * Version: 1.2
+ * Date: Feb 12, 2022
  */
 
-#include "dwin_lcd.h"
-#include "../common/dwin_set.h"
-#include "../common/dwin_font.h"
-#include "../common/dwin_color.h"
-#include "../common/encoder.h"
-#include "../../../libs/BL24CXX.h"
-
 #include "../../../inc/MarlinConfigPre.h"
-
-//#define DWIN_CREALITY_LCD_CUSTOM_ICONS
+#include "dwinui.h"
+//#include "../common/encoder.h"
+//#include "../../../libs/BL24CXX.h"
+//#include "../../../core/types.h"
+#include "dwin_defines.h"
 
 enum processID : uint8_t {
-  Main, Print, Menu, Value, Option, File, Popup, Confirm, Keyboard, Wait
+  Main, Print, Menu, Value, Option, File, Popup, Confirm, Wait, Locked, Cancel
 };
 
 enum PopupID : uint8_t {
   Pause, Stop, Resume, SaveLevel, ETemp, ConfFilChange, PurgeMore, MeshSlot,
   Level, Home, MoveWait, Heating,  FilLoad, FilChange, TempWarn, Runout, PIDWait, Resuming, ManualProbing,
-  FilInsert, HeaterTime, UserInput, LevelError, InvalidMesh, UI, Complete
+  FilInsert, HeaterTime, UserInput, LevelError, InvalidMesh, UI, Complete,
+  ESDiagPopup
 };
 
 enum menuID : uint8_t {
@@ -55,7 +57,6 @@ enum menuID : uint8_t {
       ZOffset,
       Preheat,
       ChangeFilament,
-      HostActions,
     Control,
       TempMenu,
         PID,
@@ -72,10 +73,9 @@ enum menuID : uint8_t {
         MaxAcceleration,
         MaxJerk,
         Steps,
+      FwRetraction,
       Visual,
         ColorSettings,
-      HostSettings,
-        ActionCommands,
       Advanced,
         ProbeMenu,
       Info,
@@ -88,101 +88,27 @@ enum menuID : uint8_t {
       UBLMesh,
     InfoMain,
   Tune,
-  PreheatHotend
+  PreheatHotend,
+  #if JYENHANCED
+    Parkmenu,
+    PhySetMenu,
+  #endif
 };
 
-// Custom icons
-#if ENABLED(DWIN_CREALITY_LCD_CUSTOM_ICONS)
-  // index of every custom icon should be >= CUSTOM_ICON_START
-  #define CUSTOM_ICON_START         ICON_Checkbox_F
-  #define ICON_Checkbox_F           200
-  #define ICON_Checkbox_T           201
-  #define ICON_Fade                 202
-  #define ICON_Mesh                 203
-  #define ICON_Tilt                 204
-  #define ICON_Brightness           205
-  #define ICON_AxisD                249
-  #define ICON_AxisBR               250
-  #define ICON_AxisTR               251
-  #define ICON_AxisBL               252
-  #define ICON_AxisTL               253
-  #define ICON_AxisC                254
-#else
-  #define ICON_Fade                 ICON_Version
-  #define ICON_Mesh                 ICON_Version
-  #define ICON_Tilt                 ICON_Version
-  #define ICON_Brightness           ICON_Version
-  #define ICON_AxisD                ICON_Axis
-  #define ICON_AxisBR               ICON_Axis
-  #define ICON_AxisTR               ICON_Axis
-  #define ICON_AxisBL               ICON_Axis
-  #define ICON_AxisTL               ICON_Axis
-  #define ICON_AxisC                ICON_Axis
-#endif
-
+#define Custom_Colors 10
 enum colorID : uint8_t {
   Default, White, Green, Cyan, Blue, Magenta, Red, Orange, Yellow, Brown, Black
 };
 
-#define Custom_Colors       10
-#define Color_Aqua          RGB(0x00,0x3F,0x1F)
-#define Color_Light_White   0xBDD7
-#define Color_Green         RGB(0x00,0x3F,0x00)
-#define Color_Light_Green   0x3460
-#define Color_Cyan          0x07FF
-#define Color_Light_Cyan    0x04F3
-#define Color_Blue          0x015F
-#define Color_Light_Blue    0x3A6A
-#define Color_Magenta       0xF81F
-#define Color_Light_Magenta 0x9813
-#define Color_Light_Red     0x8800
-#define Color_Orange        0xFA20
-#define Color_Light_Orange  0xFBC0
-#define Color_Light_Yellow  0x8BE0
-#define Color_Brown         0xCC27
-#define Color_Light_Brown   0x6204
-#define Color_Black         0x0000
-#define Color_Grey          0x18E3
-#define Check_Color         0x4E5C  // Check-box check color
-#define Confirm_Color       0x34B9
-#define Cancel_Color        0x3186
-
 class CrealityDWINClass {
 public:
-  static constexpr size_t eeprom_data_size = 48;
-  static struct EEPROM_Settings { // use bit fields to save space, max 48 bytes
-    bool time_format_textual : 1;
-    #if ENABLED(AUTO_BED_LEVELING_UBL)
-      uint8_t tilt_grid_size : 3;
-    #endif
-    uint16_t corner_pos : 10;
-    uint8_t cursor_color : 4;
-    uint8_t menu_split_line : 4;
-    uint8_t menu_top_bg : 4;
-    uint8_t menu_top_txt : 4;
-    uint8_t highlight_box : 4;
-    uint8_t progress_percent : 4;
-    uint8_t progress_time : 4;
-    uint8_t status_bar_text : 4;
-    uint8_t status_area_text : 4;
-    uint8_t coordinates_text : 4;
-    uint8_t coordinates_split_line : 4;
-    #if ENABLED(HOST_ACTION_COMMANDS)
-      uint64_t host_action_label_1 : 48;
-      uint64_t host_action_label_2 : 48;
-      uint64_t host_action_label_3 : 48;
-    #endif
-  } eeprom_settings;
-
   static constexpr const char * const color_names[11] = { "Default", "White", "Green", "Cyan", "Blue", "Magenta", "Red", "Orange", "Yellow", "Brown", "Black" };
   static constexpr const char * const preheat_modes[3] = { "Both", "Hotend", "Bed" };
+  static constexpr const char * const zoffset_modes[3] = { "No Live" , "OnClick", "   Live" };
 
   static void Clear_Screen(uint8_t e=3);
   static void Draw_Float(float value, uint8_t row, bool selected=false, uint8_t minunit=10);
   static void Draw_Option(uint8_t value, const char * const * options, uint8_t row, bool selected=false, bool color=false);
-  static void Draw_String(char * string, uint8_t row, bool selected=false, bool below=false);
-  static const uint64_t Encode_String(const char * string);
-  static void Decode_String(const uint64_t num, char string[8]);
   static uint16_t GetColor(uint8_t color, uint16_t original, bool light=false);
   static void Draw_Checkbox(uint8_t row, bool value);
   static void Draw_Title(const char * title);
@@ -210,8 +136,6 @@ public:
   static void Draw_Popup(FSTR_P const line1, FSTR_P const line2, FSTR_P const line3, uint8_t mode, uint8_t icon=0);
   static void Popup_Select();
   static void Update_Status_Bar(bool refresh=false);
-  static void Draw_Keyboard(bool restrict, bool numeric, uint8_t selected=0, bool uppercase=false, bool lock=false);
-  static void Draw_Keys(uint8_t index, bool selected, bool uppercase=false, bool lock=false);
 
   #if ENABLED(AUTO_BED_LEVELING_UBL)
     static void Draw_Bed_Mesh(int16_t selected = -1, uint8_t gridline_width = 1, uint16_t padding_x = 8, uint16_t padding_y_top = 40 + 53 - 7);
@@ -223,7 +147,7 @@ public:
   static void Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw=true);
 
   static void Popup_Handler(PopupID popupid, bool option = false);
-  static void Confirm_Handler(PopupID popupid);
+  static void Confirm_Handler(PopupID popupid, bool option = false);
 
   static void Main_Menu_Control();
   static void Menu_Control();
@@ -233,7 +157,6 @@ public:
   static void Print_Screen_Control();
   static void Popup_Control();
   static void Confirm_Control();
-  static void Keyboard_Control();
 
   static void Setup_Value(float value, float min, float max, float unit, uint8_t type);
   static void Modify_Value(float &value, float min, float max, float unit, void (*f)()=nullptr);
@@ -243,9 +166,9 @@ public:
   static void Modify_Value(uint32_t &value, float min, float max, float unit, void (*f)()=nullptr);
   static void Modify_Value(int8_t &value, float min, float max, float unit, void (*f)()=nullptr);
   static void Modify_Option(uint8_t value, const char * const * options, uint8_t max);
-  static void Modify_String(char * string, uint8_t maxlength, bool restrict);
 
   static void Update_Status(const char * const text);
+  static void Update_Status(FSTR_P text);
   static void Start_Print(bool sd);
   static void Stop_Print();
   static void Update();
@@ -255,6 +178,39 @@ public:
   static void Save_Settings(char *buff);
   static void Load_Settings(const char *buff);
   static void Reset_Settings();
-};
+  static void PreheatBefore();
 
+  #if HAS_ESDIAG
+    static void DWIN_EndstopsDiag();
+  #endif
+  #if HAS_LOCKSCREEN
+    static void DWIN_LockScreen();
+    static void DWIN_UnLockScreen();
+    static void HMI_LockScreen();
+  #endif
+  static void DWIN_RebootScreen();
+  static void RebootPrinter();
+  static void Update_Print_Filename(const char * const text);
+
+  #if JYENHANCED
+    static void DWIN_Invert_E0();
+  #endif
+
+  void DWIN_CError();
+  #if HAS_BED_PROBE
+    void DWIN_C12();
+  #endif
+  void DWIN_C108();
+  void DWIN_C510();
+  #if DEBUG_DWIN
+    void DWIN_C997();
+  #endif
+  void DWIN_Gcode(const int16_t codenum);
+
+  #if JYENHANCED
+    #if HAS_MESH
+      static void ApplyMeshLimits();
+    #endif
+  #endif
+};
 extern CrealityDWINClass CrealityDWIN;
