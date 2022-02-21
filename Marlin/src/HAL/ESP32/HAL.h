@@ -92,16 +92,6 @@ void analogWrite(pin_t pin, int value);
 #define GET_PIN_MAP_INDEX(pin) pin
 #define PARSED_PIN_INDEX(code, dval) parser.intval(code, dval)
 
-<<<<<<< HEAD
-// Enable hooks into idle and setup for HAL
-#define HAL_IDLETASK 1
-#define BOARD_INIT() HAL_init_board()
-void HAL_idletask();
-inline void HAL_init() {}
-void HAL_init_board();
-
-=======
->>>>>>> 44eff9a233 (♻️ Refactor HAL as singleton (#23357))
 #if ENABLED(USE_ESP32_EXIO)
   void Write_EXIO(uint8_t IO, uint8_t v);
 #endif
