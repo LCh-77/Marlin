@@ -287,12 +287,17 @@ public:
   }
   static float get_z_correction(const xy_pos_t &pos) { return get_z_correction(pos.x, pos.y); }
 
-  static float mesh_index_to_xpos(const uint8_t i) {
-    return i < (GRID_MAX_POINTS_X) ? pgm_read_float(&_mesh_index_to_xpos[i]) : MESH_MIN_X + i * (MESH_X_DIST);
-  }
-  static float mesh_index_to_ypos(const uint8_t i) {
-    return i < (GRID_MAX_POINTS_Y) ? pgm_read_float(&_mesh_index_to_ypos[i]) : MESH_MIN_Y + i * (MESH_Y_DIST);
-  }
+  #if JYENHANCED
+    static float mesh_index_to_xpos(const uint8_t i);
+    static float mesh_index_to_ypos(const uint8_t i);
+  #else
+    static float mesh_index_to_xpos(const uint8_t i) {
+      return i < (GRID_MAX_POINTS_X) ? pgm_read_float(&_mesh_index_to_xpos[i]) : MESH_MIN_X + i * (MESH_X_DIST);
+    }
+    static float mesh_index_to_ypos(const uint8_t i) {
+      return i < (GRID_MAX_POINTS_Y) ? pgm_read_float(&_mesh_index_to_ypos[i]) : MESH_MIN_Y + i * (MESH_Y_DIST);
+    }
+  #endif
 
   #if UBL_SEGMENTED
     static bool line_to_destination_segmented(const_feedRate_t scaled_fr_mm_s);

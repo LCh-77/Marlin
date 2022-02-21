@@ -38,7 +38,7 @@
 #include "dwin_defines.h"
 
 enum processID : uint8_t {
-  Main, Print, Menu, Value, Option, File, Popup, Confirm, Wait, Locked
+  Main, Print, Menu, Value, Option, File, Popup, Confirm, Wait, Locked, Cancel
 };
 
 enum PopupID : uint8_t {
@@ -168,6 +168,7 @@ public:
   static void Modify_Option(uint8_t value, const char * const * options, uint8_t max);
 
   static void Update_Status(const char * const text);
+  static void Update_Status(FSTR_P text);
   static void Start_Print(bool sd);
   static void Stop_Print();
   static void Update();
@@ -177,6 +178,7 @@ public:
   static void Save_Settings(char *buff);
   static void Load_Settings(const char *buff);
   static void Reset_Settings();
+  static void PreheatBefore();
 
   #if HAS_ESDIAG
     static void DWIN_EndstopsDiag();

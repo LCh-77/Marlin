@@ -621,6 +621,8 @@ G29_TYPE GcodeSuite::G29() {
 
         int8_t inStart, inStop, inInc;
 
+        TERN_(JYENHANCED, if (temp_val.cancel_lev) break; );
+
         if (zig) {                      // Zig away from origin
           inStart = 0;                  // Left or front
           inStop = PR_INNER_SIZE;       // Right or back
@@ -682,6 +684,7 @@ G29_TYPE GcodeSuite::G29() {
 
           abl.reenable = false;
           idle_no_sleep();
+          TERN_(JYENHANCED, if (temp_val.cancel_lev) break; );
 
         } // inner
       } // outer

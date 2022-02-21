@@ -19,7 +19,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-#pragma once
+
+#ifndef __DWINDEFINES__
+#define __DWINDEFINES__
 
 /**
  * DWIN general defines and data structs
@@ -64,11 +66,29 @@
 #define Def_Indicator_Color   Color_White
 #define Def_Coordinate_Color  Color_White
 
+#if HAS_MESH
+  #ifndef MESH_INSET
+    #define MESH_INSET 25
+  #endif
+  #ifndef MESH_MIN_X
+    #define MESH_MIN_X MESH_INSET
+  #endif
+  #ifndef MESH_MIN_Y
+    #define MESH_MIN_Y MESH_INSET
+  #endif
+  #ifndef MESH_MAX_X
+    #define MESH_MAX_X  X_BED_SIZE - (MESH_INSET)
+  #endif
+  #ifndef MESH_MAX_Y
+    #define MESH_MAX_Y  X_BED_SIZE - (MESH_INSET)
+  #endif
+#endif
+
 #if JYENHANCED
   #include "jyenhanced.h"
 #endif
 
-static struct Temp_Values {
+typedef struct {
   // Flags
   bool cancel_lev : 1;       // Cancel leveling
   // Auxiliary values
@@ -78,7 +98,8 @@ static struct Temp_Values {
       int16_t last_pos = 0;
     #endif
   #endif
-} temp_val;
+} temp_val_t;
+extern temp_val_t temp_val;
 
 typedef struct {
   bool time_format_textual : 1;
@@ -133,7 +154,10 @@ typedef struct {
 static constexpr size_t eeprom_data_size = 64;
 extern eeprom_settings_t eeprom_settings;
 
+#endif // __DWINDEFINES__
+
 #if JYENHANCED
+
   #undef INVERT_E0_DIR
 
   #undef X_BED_SIZE

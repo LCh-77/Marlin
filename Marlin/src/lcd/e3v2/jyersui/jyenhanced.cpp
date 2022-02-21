@@ -30,6 +30,11 @@
   #include "../../../module/probe.h"
 #endif
 
+#if ENABLED(AUTO_BED_LEVELING_UBL)
+  #include "../../../feature/bedlevel/bedlevel.h"
+  #include "../../../feature/bedlevel/ubl/ubl.h"
+#endif
+
 #if HAS_BED_PROBE
   float Probe::_min_x(const xy_pos_t &probe_offset_xy) {
     return _MAX((X_MIN_BED) + (eeprom_settings.mesh_min_x), (X_MIN_POS) + probe_offset_xy.x);
@@ -45,27 +50,71 @@
   }
 #endif
 
+#if ENABLED(AUTO_BED_LEVELING_UBL)
+  float unified_bed_leveling::mesh_index_to_xpos(const uint8_t i) {
+      return (eeprom_settings.mesh_min_x) + i * (float(eeprom_settings.mesh_max_x - (eeprom_settings.mesh_min_x)) / GRID_MAX_CELLS_X);
+  }
+  float unified_bed_leveling::mesh_index_to_ypos(const uint8_t i) {
+      return (eeprom_settings.mesh_min_y) + i * (float(eeprom_settings.mesh_max_y - (eeprom_settings.mesh_min_y)) / GRID_MAX_CELLS_Y);
+  }
+#endif
+
 void JYEnhancedClass::UpdateAxis(const AxisEnum axis) {
-  const xyz_float_t _Valuemin = { (float)eeprom_settings.x_min_pos, (float)eeprom_settings.y_min_pos, Z_MIN_POS };
-  const xyz_float_t _Valuemax = { (float)eeprom_settings.x_max_pos, (float)eeprom_settings.y_max_pos, (float)eeprom_settings.z_max_pos };
-  if (axis == NO_AXIS_ENUM) {
+  const xyz_float_t _axis_min = { (float)eeprom_settings.x_min_pos, (float)eeprom_settings.y_min_pos, Z_MIN_POS };
+  const xyz_float_t _axis_max = { (float)eeprom_settings.x_max_pos, (float)eeprom_settings.y_max_pos, (float)eeprom_settings.z_max_pos };
+  if (axis == NO_AXIS_ENUM || axis == ALL_AXES_ENUM) {
     LOOP_L_N(i,2) {
-      soft_endstop.min[i] = _Valuemin[i];
-      soft_endstop.max[i] = _Valuemax[i];
       #if HAS_WORKSPACE_OFFSET
         workspace_offset[i] = home_offset[i] + position_shift[i];
       #endif
+      soft_endstop.min[i] = _axis_min[i];
+      soft_endstop.max[i] = _axis_max[i];
     }
   }
   else {
-    soft_endstop.min[axis] = _Valuemin[axis];
-    soft_endstop.max[axis] = _Valuemax[axis];
+    soft_endstop.min[axis] = _axis_min[axis];
+    soft_endstop.max[axis] = _axis_max[axis];
   }
 }
 
 void JYEnhancedClass::ApplyPhySet() {
   update_software_endstops(temp_val.axis);
 }
+
+#if HAS_MESH
+  void JYEnhancedClass::C29() {
+    if (!parser.seen("LRFB")) return C29_report();
+    if (parser.seenval('L')) {
+      eeprom_settings.mesh_min_x = parser.value_float();
+      LIMIT( eeprom_settings.mesh_min_x, MIN_MESH_INSET, MAX_MESH_INSET);
+    }
+    if (parser.seenval('R')) {
+      eeprom_settings.mesh_max_x = parser.value_float();
+      LIMIT( eeprom_settings.mesh_max_x, MIN_MESH_INSET, MAX_MESH_INSET);
+    }
+    if (parser.seenval('F')) {
+      eeprom_settings.mesh_min_y = parser.value_float();
+      LIMIT( eeprom_settings.mesh_min_y, MIN_MESH_INSET, MAX_MESH_INSET);
+    }
+    if (parser.seenval('B')) {
+      eeprom_settings.mesh_max_y = parser.value_float();
+      LIMIT( eeprom_settings.mesh_max_y, MIN_MESH_INSET, MAX_MESH_INSET);
+    }
+    ApplyPhySet();
+  }
+
+  void JYEnhancedClass::C29_report(const bool forReplay/*=true*/) {
+    gcode.report_heading_etc(forReplay, F("Mesh Insets L(mm) R(mm) F(mm) B(mm)"));
+    SERIAL_ECHOLNPGM_P(
+      PSTR("  C29 L"), eeprom_settings.mesh_min_x,
+      PSTR(" R"), eeprom_settings.mesh_max_x,
+      PSTR(" F"), eeprom_settings.mesh_min_y,
+      PSTR(" B"), eeprom_settings.mesh_max_y
+    );
+  }
+#endif  // HAS_MESH
+
+
 
 void JYEnhancedClass::C100() {
   if (!parser.seen("XY")) return C100_report();
@@ -195,32 +244,12 @@ void JYEnhancedClass::C562_report(const bool forReplay/*=true*/) {
   );
 }
 
-#if HAS_MESH
-
-  void JYEnhancedClass::C852() {
-    if (!parser.seen("M")) return C852_report();
-    int16_t margin_parser;
-    if (parser.seenval('M')) {
-      margin_parser = parser.value_int();
-      if (!WITHIN(margin_parser, MIN_PROBE_MARGIN, MAX_PROBE_MARGIN)) return CrealityDWIN.DWIN_CError();
-      else eeprom_settings.probing_margin = (float)margin_parser;
-    }
-  }
-
-  void JYEnhancedClass::C852_report(const bool forReplay/*=true*/) {
-    gcode.report_heading(forReplay, F("Probing Margin M(5 to 60 mm)"));
-    SERIAL_ECHOLNPGM_P(
-      PSTR("  C852 M"), eeprom_settings.probing_margin
-    );
-  }
-
-#endif
-
 #if HAS_BED_PROBE
   void JYEnhancedClass::C851() {
-    if (!parser.seen("FS")) return C851_report();
+    if (!parser.seen("FSM")) return C851_report();
     uint16_t z_fast_feedrate_parser = eeprom_settings.zprobefeedfast ;
     uint16_t z_slow_feedrate_parser = eeprom_settings.zprobefeedslow;
+    int16_t margin_parser;
   
     if (parser.seenval('F')) {
       z_fast_feedrate_parser = static_cast<int>(parser.value_linear_units());
@@ -232,13 +261,19 @@ void JYEnhancedClass::C562_report(const bool forReplay/*=true*/) {
      if  (!WITHIN(z_slow_feedrate_parser, MIN_Z_PROBE_FEEDRATE, MAX_Z_PROBE_FEEDRATE)) return CrealityDWIN.DWIN_CError();
      else eeprom_settings.zprobefeedslow = z_slow_feedrate_parser;
     }
+    if (parser.seenval('M')) {
+      margin_parser = parser.value_int();
+      if (!WITHIN(margin_parser, MIN_PROBE_MARGIN, MAX_PROBE_MARGIN)) return CrealityDWIN.DWIN_CError();
+      else eeprom_settings.probing_margin = (float)margin_parser;
+    }
   }
 
   void JYEnhancedClass::C851_report(const bool forReplay/*=true*/) {
-    gcode.report_heading(forReplay, F("Z Probe Fast/Slow Feedrate F(mm/min) S(mm/min)"));
+    gcode.report_heading(forReplay, F("Z Probe Fast/Slow Feedrate F(mm/min) S(mm/min) M(5 to 60 mm)"));
     SERIAL_ECHOLNPGM_P(
       PSTR("  C851 F"), eeprom_settings.zprobefeedfast,
-      PSTR(" S"), eeprom_settings.zprobefeedslow
+      PSTR(" S"), eeprom_settings.zprobefeedslow,
+      PSTR(" M"), eeprom_settings.probing_margin
     );
   }
 #endif

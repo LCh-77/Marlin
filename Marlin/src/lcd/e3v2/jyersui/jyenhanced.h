@@ -44,22 +44,6 @@ constexpr int16_t DEF_Z_MAX_POS = Z_MAX_POS;
 #define MIN_PARK_POINT_Z 10
 
 #if HAS_MESH
-  #ifndef MESH_INSET
-    #define MESH_INSET 25
-  #endif
-  #ifndef MESH_MIN_X
-    #define MESH_MIN_X MESH_INSET
-  #endif
-  #ifndef MESH_MIN_Y
-    #define MESH_MIN_Y MESH_INSET
-  #endif
-  #ifndef MESH_MAX_X
-    #define MESH_MAX_X  X_BED_SIZE - (MESH_INSET)
-  #endif
-  #ifndef MESH_MAX_Y
-    #define MESH_MAX_Y  X_BED_SIZE - (MESH_INSET)
-  #endif
-
   constexpr int16_t DEF_MESH_MIN_X = MESH_MIN_X;
   constexpr int16_t DEF_MESH_MAX_X = MESH_MAX_X;
   constexpr int16_t DEF_MESH_MIN_Y = MESH_MIN_Y;
@@ -91,6 +75,8 @@ constexpr int16_t DEF_Z_MAX_POS = Z_MAX_POS;
 class JYEnhancedClass {
 public:
   #if HAS_MESH
+    static void C29();
+    static void C29_report(const bool forReplay=true);
     static void C852();
     static void C852_report(const bool forReplay=true);
   #endif
