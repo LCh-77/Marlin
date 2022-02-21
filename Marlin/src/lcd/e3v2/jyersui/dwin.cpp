@@ -25,8 +25,8 @@
  * JYERSUI Author: Jacob Myers
  *
  * JYERSUI Enhanced by LCH-77
- * Version: 1.3
- * Date: Feb 06, 2022
+ * Version: 1.4
+ * Date: Feb 9, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
@@ -156,6 +156,8 @@ enum SelectItem : uint8_t {
   PRINT_COUNT
 };
 
+eeprom_settings_t eeprom_settings;
+temp_val_t temp_val;
 uint8_t active_menu = MainMenu, last_menu = MainMenu;
 uint8_t selection = 0, last_selection = 0, last_pos_selection = 0;
 uint8_t scrollpos = 0;
@@ -399,8 +401,6 @@ CrealityDWINClass CrealityDWIN;
 #endif // HAS_MESH
 
 /* General Display Functions */
-
-struct CrealityDWINClass::EEPROM_Settings CrealityDWINClass::eeprom_settings{0};
 constexpr const char * const CrealityDWINClass::color_names[11];
 constexpr const char * const CrealityDWINClass::preheat_modes[3];
 constexpr const char * const CrealityDWINClass::zoffset_modes[3];
@@ -945,13 +945,13 @@ void CrealityDWINClass::Draw_Status_Area(bool icons/*=false*/) {
 }
 
 void CrealityDWINClass::Draw_Popup(FSTR_P const line1, FSTR_P const line2, FSTR_P const line3, uint8_t mode, uint8_t icon/*=0*/) {
-  if (process != Confirm && process != Popup && process != Wait) last_process = process;
+  if (process != Confirm && process != Popup && process != Wait && process != Cancel) last_process = process;
   if ((process == Menu || process == Wait) && mode == Popup) last_selection = selection;
   process = mode;
   Clear_Screen();
-  DWIN_Draw_Rectangle(0, Color_White, 13, 59, 259, 351);
-  DWIN_Draw_Rectangle(1, Color_Bg_Window, 14, 60, 258, 350);
-  const uint8_t ypos = (mode == Popup || mode == Confirm) ? 150 : 230;
+  DWIN_Draw_Rectangle(0, Color_White, 13, 59, 259, 346);
+  DWIN_Draw_Rectangle(1, Color_Bg_Window, 14, 60, 258, 345);
+  const uint8_t ypos = (mode == Popup || mode == Confirm) ? 150 : (mode == Cancel) ? 200 : 230;
   if (icon > 0) DWIN_ICON_Show(ICON, icon, 101, 105);
   DWIN_Draw_String(true, DWIN_FONT_MENU, Popup_Text_Color, Color_Bg_Window, (272 - 8 * strlen_P(FTOP(line1))) / 2, ypos, line1);
   DWIN_Draw_String(true, DWIN_FONT_MENU, Popup_Text_Color, Color_Bg_Window, (272 - 8 * strlen_P(FTOP(line2))) / 2, ypos + 30, line2);
@@ -967,6 +967,10 @@ void CrealityDWINClass::Draw_Popup(FSTR_P const line1, FSTR_P const line2, FSTR_
   else if (mode == Confirm) {
     DWIN_Draw_Rectangle(1, Confirm_Color, 87, 280, 186, 317);
     DWIN_Draw_String(false, DWIN_FONT_STAT, Color_White, Color_Bg_Window, 96, 290, F("Continue"));
+  }
+  else if (mode == Cancel) {
+    DWIN_Draw_Rectangle(1, Confirm_Color, 87, 280, 186, 317);
+    DWIN_Draw_String(false, DWIN_FONT_STAT, Color_White, Color_Bg_Window, 104, 290, F("Cancel"));
   }
 }
 
@@ -1334,11 +1338,11 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
 
       #define MLEVEL_BACK 0
       #define MLEVEL_PROBE (MLEVEL_BACK + ENABLED(HAS_BED_PROBE))
-      #define MLEVEL_BL (MLEVEL_PROBE + 1)
-      #define MLEVEL_TL (MLEVEL_BL + 1)
-      #define MLEVEL_TR (MLEVEL_TL + 1)
-      #define MLEVEL_BR (MLEVEL_TR + 1)
-      #define MLEVEL_C (MLEVEL_BR + 1)
+      #define MLEVEL_FL (MLEVEL_PROBE + 1)
+      #define MLEVEL_BL (MLEVEL_FL + 1)
+      #define MLEVEL_BR (MLEVEL_BL + 1)
+      #define MLEVEL_FR (MLEVEL_BR + 1)
+      #define MLEVEL_C (MLEVEL_FR + 1)
       #define MLEVEL_ZPOS (MLEVEL_C + 1)
       #define MLEVEL_TOTAL MLEVEL_ZPOS
 
@@ -1367,10 +1371,10 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
                 Popup_Handler(Level);
                 do_z_clearance(Z_HOMING_HEIGHT);
                 corner_avg = 0;
-                #define PROBE_X_MIN _MAX(corner_pos, PROBING_MARGIN, eeprom_settings.mesh_min_x) - probe.offset.x
-                #define PROBE_X_MAX _MIN(X_BED_SIZE - corner_pos, X_BED_SIZE - PROBING_MARGIN, eeprom_settings.mesh_max_x) - probe.offset.x
-                #define PROBE_Y_MIN _MAX(corner_pos, PROBING_MARGIN, eeprom_settings.mesh_min_y) - probe.offset.y
-                #define PROBE_Y_MAX _MIN(Y_BED_SIZE - corner_pos, Y_BED_SIZE - PROBING_MARGIN, eeprom_settings.mesh_max_y) - probe.offset.y
+                #define PROBE_X_MIN _MAX(corner_pos, PROBING_MARGIN, MESH_MIN_X) - probe.offset.x
+                #define PROBE_X_MAX _MIN(X_BED_SIZE - corner_pos, X_BED_SIZE - PROBING_MARGIN, MESH_MAX_X) - probe.offset.x
+                #define PROBE_Y_MIN _MAX(corner_pos, PROBING_MARGIN, MESH_MIN_Y) - probe.offset.y
+                #define PROBE_Y_MAX _MIN(Y_BED_SIZE - corner_pos, Y_BED_SIZE - PROBING_MARGIN, MESH_MAX_Y) - probe.offset.y
                 zval = probe.probe_at_point(PROBE_X_MIN, PROBE_Y_MIN, PROBE_PT_RAISE, 0, false);
                 const char * MSG_UNREACHABLE = "Position unreachable. Check Probe Offsets and Bed Screw Inset.";
                 if (isnan(zval)) {
@@ -1402,9 +1406,9 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             }
             break;
         #endif
-        case MLEVEL_BL:
+        case MLEVEL_FL:
           if (draw)
-            Draw_Menu_Item(row, ICON_AxisBL, F("Bottom Left"));
+            Draw_Menu_Item(row, ICON_AxisBL, F("Front Left"));
           else {
             Popup_Handler(MoveWait);
             if (use_probe) {
@@ -1423,9 +1427,9 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             }
           }
           break;
-        case MLEVEL_TL:
+        case MLEVEL_BL:
           if (draw)
-            Draw_Menu_Item(row, ICON_AxisTL, F("Top Left"));
+            Draw_Menu_Item(row, ICON_AxisTL, F("Back Left"));
           else {
             Popup_Handler(MoveWait);
             if (use_probe) {
@@ -1444,9 +1448,9 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             }
           }
           break;
-        case MLEVEL_TR:
+        case MLEVEL_BR:
           if (draw)
-            Draw_Menu_Item(row, ICON_AxisTR, F("Top Right"));
+            Draw_Menu_Item(row, ICON_AxisTR, F("Back Right"));
           else {
             Popup_Handler(MoveWait);
             if (use_probe) {
@@ -1465,9 +1469,9 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             }
           }
           break;
-        case MLEVEL_BR:
+        case MLEVEL_FR:
           if (draw)
-            Draw_Menu_Item(row, ICON_AxisBR, F("Bottom Right"));
+            Draw_Menu_Item(row, ICON_AxisBR, F("Front Right"));
           else {
             Popup_Handler(MoveWait);
             if (use_probe) {
@@ -3345,6 +3349,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
                   Popup_Handler(MeshSlot);
                   break;
                 }
+                PreheatBefore();
                 Popup_Handler(Home);
                 gcode.home_all_axes(true);
                 Popup_Handler(Level);
@@ -3363,28 +3368,22 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             if (draw)
               Draw_Menu_Item(row, ICON_Mesh, F("Create New Mesh"));
             else {
+              #if ENABLED(AUTO_BED_LEVELING_UBL)
+                if (ubl.storage_slot <0) {
+                  Popup_Handler(MeshSlot, true);
+                  break;
+                }
+              #endif
+              PreheatBefore();
               Popup_Handler(Home);
               gcode.home_all_axes(true);
               #if ENABLED(AUTO_BED_LEVELING_UBL)
-                #if ENABLED(PREHEAT_BEFORE_LEVELING)
-                  Popup_Handler(Heating);
-                  #if HAS_HOTEND
-                    if (thermalManager.degTargetHotend(0) < LEVELING_NOZZLE_TEMP)
-                      thermalManager.setTargetHotend(LEVELING_NOZZLE_TEMP, 0);
-                  #endif
-                  #if HAS_HEATED_BED
-                    if (thermalManager.degTargetBed() < LEVELING_BED_TEMP)
-                      thermalManager.setTargetBed(LEVELING_BED_TEMP);
-                  #endif
-                  thermalManager.wait_for_hotend(0);
-                  TERN_(HAS_HEATED_BED, thermalManager.wait_for_bed_heating());
-                #endif
                 #if HAS_BED_PROBE
                   Popup_Handler(Level);
-                  gcode.process_subcommands_now(F("G29 P0\nG29 P1"));
+                  gcode.process_subcommands_now(F("G29 P1"));
                   gcode.process_subcommands_now(F("G29 P3\nG29 P3\nG29 P3\nG29 P3\nG29 P3\nG29 P3\nG29 P3\nG29 P3\nG29 P3\nG29 P3\nG29 P3\nG29 P3\nG29 P3\nG29 P3\nG29 P3\nM420 S1"));
                   planner.synchronize();
-                  Update_Status("Probed all reachable points");
+                  Update_Status(GET_TEXT_F(MSG_MESH_DONE));
                   Popup_Handler(SaveLevel);
                 #else
                   level_state = planner.leveling_active;
@@ -3399,13 +3398,14 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
                 Popup_Handler(Level);
                 gcode.process_subcommands_now(F("G29"));
                 planner.synchronize();
+                Update_Status(GET_TEXT_F(MSG_MESH_DONE));
                 Popup_Handler(SaveLevel);
               #else
                 level_state = planner.leveling_active;
                 set_bed_leveling_enabled(false);
                 gridpoint = 1;
                 Popup_Handler(MoveWait);
-                gcode.process_subcommands_now(F("G29"));
+                gcode.process_subcommands_now(F("M211 S0\nG29"));
                 planner.synchronize();
                 Draw_Menu(ManualMesh);
               #endif
@@ -3427,6 +3427,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
                   break;
                 }
               #endif
+              PreheatBefore();
               if (axes_should_home()) {
                 Popup_Handler(Home);
                 gcode.home_all_axes(true);
@@ -3434,21 +3435,9 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
               level_state = planner.leveling_active;
               set_bed_leveling_enabled(false);
               mesh_conf.goto_mesh_value = false;
-              #if ENABLED(PREHEAT_BEFORE_LEVELING)
-                Popup_Handler(Heating);
-                #if HAS_HOTEND
-                  if (thermalManager.degTargetHotend(0) < LEVELING_NOZZLE_TEMP)
-                    thermalManager.setTargetHotend(LEVELING_NOZZLE_TEMP, 0);
-                #endif
-                #if HAS_HEATED_BED
-                  if (thermalManager.degTargetBed() < LEVELING_BED_TEMP)
-                    thermalManager.setTargetBed(LEVELING_BED_TEMP);
-                #endif
-                TERN_(HAS_HOTEND, thermalManager.wait_for_hotend(0));
-                TERN_(HAS_HEATED_BED, thermalManager.wait_for_bed_heating());
-              #endif
               Popup_Handler(MoveWait);
               mesh_conf.manual_move();
+              gcode.process_subcommands_now(F("M211 S0"));
               Draw_Menu(LevelManual);
             }
             break;
@@ -4944,6 +4933,7 @@ void CrealityDWINClass::Confirm_Control() {
         break;
       case HeaterTime:
         Popup_Handler(Heating);
+        Update_Status(GET_TEXT_F(MSG_HEATING));
         wait_for_user = false;
         break;
       #if HAS_ESDIAG
@@ -5031,6 +5021,10 @@ void CrealityDWINClass::Update_Print_Filename(const char * const text) {
 void CrealityDWINClass::Update_Status(const char * const text) {
   LOOP_L_N(i, _MIN((size_t)64, strlen(text))) statusmsg[i] = text[i];
   statusmsg[_MIN((size_t)64, strlen(text))] = '\0';
+}
+
+void CrealityDWINClass::Update_Status(FSTR_P text) {
+  Update_Status(FTOP(text));
 }
 
 void CrealityDWINClass::Start_Print(bool sd) {
@@ -5309,9 +5303,27 @@ void CrealityDWINClass::Reset_Settings() {
   Redraw_Screen();
 }
 
+void CrealityDWINClass::PreheatBefore() {
+  #if ANY(PREHEAT_BEFORE_PROBING, PREHEAT_BEFORE_LEVELING, PREHEAT_BEFORE_LEVELING_PROBE_MANUALLY)
+    Popup_Handler(Heating);
+    #if HAS_HOTEND
+      if (thermalManager.degTargetHotend(0) < LEVELING_NOZZLE_TEMP)
+        thermalManager.setTargetHotend(LEVELING_NOZZLE_TEMP, 0);
+    #endif
+    #if HAS_HEATED_BED
+      if (thermalManager.degTargetBed() < LEVELING_BED_TEMP)
+        thermalManager.setTargetBed(LEVELING_BED_TEMP);
+    #endif
+    TERN_(HAS_HOTEND, thermalManager.wait_for_hotend(0));
+    TERN_(HAS_HEATED_BED, thermalManager.wait_for_bed_heating());
+    Update_Status("");
+  #endif
+}
+
 void MarlinUI::init_lcd() {
   DWINUI::init();
   Encoder_Configuration();
+  DWIN_JPG_ShowAndCache(0);
   for (uint16_t t = 0; t <= 100; t += 2) {
     DWIN_ICON_Show(ICON, ICON_Bar, 15, 260);
     DWIN_Draw_Rectangle(1, Color_Bg_Black, 15 + t * 242 / 100, 260, 257, 280);
@@ -5386,7 +5398,7 @@ void CrealityDWINClass::RebootPrinter() {
   thermalManager.disable_all_heaters();
   planner.finish_and_disable();
   DWIN_RebootScreen();
-  HAL_reboot();
+  hal.reboot();
 }
 
 #endif // DWIN_CREALITY_LCD_JYERSUI

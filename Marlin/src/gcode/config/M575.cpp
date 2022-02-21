@@ -26,6 +26,10 @@
 
 #include "../gcode.h"
 
+#if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
+  #include "../../lcd/e3v2/jyersui/dwin.h"
+#endif
+
 /**
  * M575 - Change serial baud rate
  *

@@ -26,14 +26,16 @@
  * JYERSUI Author: Jacob Myers
  *
  * JYERSUI Enhanced by LCH-77
- * Version: 1.2
- * Date: Feb 2, 2022
+ * Version: 1.4
+ * Date: Feb 9, 2022
  */
 
+#include "../../../inc/MarlinConfigPre.h"
 #include "dwin_defines.h"
+#include "../../../inc/MarlinConfig.h"
 
 enum processID : uint8_t {
-  Main, Print, Menu, Value, Option, File, Popup, Confirm, Wait, Locked
+  Main, Print, Menu, Value, Option, File, Popup, Confirm, Wait, Locked, Cancel
 };
 
 enum PopupID : uint8_t {
@@ -93,29 +95,6 @@ enum colorID : uint8_t {
 
 class CrealityDWINClass {
 public:
-  static constexpr size_t eeprom_data_size = 48;
-  static struct EEPROM_Settings { // use bit fields to save space, max 48 bytes
-    bool time_format_textual : 1;
-    #if ENABLED(AUTO_BED_LEVELING_UBL)
-      uint8_t tilt_grid_size : 3;
-    #endif
-    uint16_t corner_pos : 10;
-    uint8_t cursor_color : 4;
-    uint8_t menu_split_line : 4;
-    uint8_t menu_top_bg : 4;
-    uint8_t menu_top_txt : 4;
-    uint8_t highlight_box : 4;
-    uint8_t progress_percent : 4;
-    uint8_t progress_time : 4;
-    uint8_t status_bar_text : 4;
-    uint8_t status_area_text : 4;
-    uint8_t coordinates_text : 4;
-    uint8_t coordinates_split_line : 4;
-    #if ENABLED(BAUD_RATE_GCODE)
-      bool Baud115k : 1;
-    #endif
-  } eeprom_settings;
-
   static constexpr const char * const color_names[11] = { "Default", "White", "Green", "Cyan", "Blue", "Magenta", "Red", "Orange", "Yellow", "Brown", "Black" };
   static constexpr const char * const preheat_modes[3] = { "Both", "Hotend", "Bed" };
   static constexpr const char * const zoffset_modes[3] = { "No Live" , "OnClick", "   Live" };
@@ -182,6 +161,7 @@ public:
   static void Modify_Option(uint8_t value, const char * const * options, uint8_t max);
 
   static void Update_Status(const char * const text);
+  static void Update_Status(FSTR_P text);
   static void Start_Print(bool sd);
   static void Stop_Print();
   static void Update();
@@ -191,6 +171,7 @@ public:
   static void Save_Settings(char *buff);
   static void Load_Settings(const char *buff);
   static void Reset_Settings();
+  static void PreheatBefore();
 
   #if HAS_ESDIAG
     static void DWIN_EndstopsDiag();
