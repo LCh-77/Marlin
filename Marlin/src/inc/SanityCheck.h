@@ -2861,6 +2861,14 @@ static_assert(COUNT(arm) == LOGICAL_AXES, "AXIS_RELATIVE_MODES must contain " _L
   #endif
 #endif
 
+#if LCD_BACKLIGHT_TIMEOUT
+  #if !HAS_ENCODER_ACTION
+    #error "LCD_BACKLIGHT_TIMEOUT requires an LCD with encoder or keypad."
+  #elif !PIN_EXISTS(LCD_BACKLIGHT)
+    #error "LCD_BACKLIGHT_TIMEOUT requires LCD_BACKLIGHT_PIN."
+  #endif
+#endif
+
 /**
  * Some boards forbid the use of -1 Native USB
  */
