@@ -229,6 +229,9 @@ namespace DWINUI {
   inline void Draw_IconWB(uint8_t icon, uint16_t x, uint16_t y) {
     DWIN_ICON_Show(true, false, false, ICON, icon, x, y);
   }
+  inline void DRAW_IconWB(uint8_t libID, uint8_t icon, uint16_t x, uint16_t y) {
+    DWIN_ICON_Show(true, false, false, libID, icon, x, y);
+  }
 
   // Draw a positive integer
   //  bShow: true=display background color; false=don't display background color
