@@ -33,6 +33,8 @@
   #include "../../feature/probe_temp_comp.h"
 #endif
 
+#include "../../lcd/marlinui.h"
+
 /**
  * G30: Do a single Z probe at the current XY
  *
@@ -48,21 +50,40 @@ void GcodeSuite::G30() {
   const xy_pos_t pos = { parser.linearval('X', current_position.x + probe.offset_xy.x),
                          parser.linearval('Y', current_position.y + probe.offset_xy.y) };
 
-  if (!probe.can_reach(pos)) return;
+  if (!probe.can_reach(pos)) {
+    #if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
+      PGM_P msg = {"Outside of Probing Area"};
+      SERIAL_ECHOLNPGM_P(msg);
+      ui.set_status(msg);
+    #endif
+    return;
+  }
 
   // Disable leveling so the planner won't mess with us
   TERN_(HAS_LEVELING, set_bed_leveling_enabled(false));
 
   remember_feedrate_scaling_off();
 
+  TERN_(DWIN_CREALITY_LCD_JYERSUI, gcode.process_subcommands_now(F("G28O"));)
+
   const ProbePtRaise raise_after = parser.boolval('E', true) ? PROBE_PT_STOW : PROBE_PT_NONE;
 
   TERN_(HAS_PTC, ptc.set_enabled(!parser.seen('C') || parser.value_bool()));
   const float measured_z = probe.probe_at_point(pos, raise_after, 1);
   TERN_(HAS_PTC, ptc.set_enabled(true));
-  if (!isnan(measured_z))
+  if (!isnan(measured_z)) {
     SERIAL_ECHOLNPGM("Bed X: ", pos.x, " Y: ", pos.y, " Z: ", measured_z);
-
+    #if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
+      char buf[31] = "";
+      char strg_1[6], strg_2[6],strg_3[6] = "";
+      sprintf_P(buf, PSTR("X:%s, Y:%s, Z:%s"), 
+        dtostrf(pos.x, 1, 1, strg_1),
+        dtostrf(pos.y, 1, 1, strg_2),
+        dtostrf(measured_z, 1, 2, strg_3)
+      );
+      ui.set_status(buf);
+    #endif
+  }
   restore_feedrate_and_scaling();
 
   if (raise_after == PROBE_PT_STOW)

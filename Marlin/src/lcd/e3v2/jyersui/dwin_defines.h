@@ -30,7 +30,8 @@
  * Date: 2022/02/02
  *
  * Modded for JYERSUI by LCH-77
- * Date: 2022/02/06
+ * Version: 1.5
+ * Date: Feb 20, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
@@ -89,19 +90,6 @@
 #endif
 
 typedef struct {
-  // Flags
-  bool cancel_lev : 1;       // Cancel leveling
-  // Auxiliary values
-  AxisEnum axis = X_AXIS;    // Axis Select
-  #if JYENHANCED
-    #if ENABLED(NOZZLE_PARK_FEATURE)
-      int16_t last_pos = 0;
-    #endif
-  #endif
-} temp_val_t;
-extern temp_val_t temp_val;
-
-typedef struct {
   bool time_format_textual : 1;
   #if ENABLED(AUTO_BED_LEVELING_UBL)
     uint8_t tilt_grid_size : 3;
@@ -120,6 +108,12 @@ typedef struct {
   uint8_t coordinates_split_line : 4;
   #if ENABLED(BAUD_RATE_GCODE)
     bool Baud115k : 1;
+  #endif
+  #if ENABLED(PREHEAT_BEFORE_LEVELING)
+    bool ena_hotend_levtemp : 1;
+    bool ena_bed_levtemp : 1;
+    celsius_t hotend_levtemp = LEVELING_NOZZLE_TEMP;
+    celsius_t bed_levtemp = LEVELING_BED_TEMP;
   #endif
   #if JYENHANCED
     bool Invert_E0 = DEF_INVERT_E0_DIR;
