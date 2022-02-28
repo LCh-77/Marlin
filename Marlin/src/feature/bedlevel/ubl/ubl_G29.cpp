@@ -49,6 +49,10 @@
   #include "../../../lcd/extui/ui_api.h"
 #endif
 
+#if ENABLED(JYENHANCED)
+  #include "../../../lcd/e3v2/jyersui/dwin.h"
+#endif
+
 #if ENABLED(UBL_HILBERT_CURVE)
   #include "../hilbert_curve.h"
 #endif

@@ -26,16 +26,13 @@
  * JYERSUI Author: Jacob Myers
  *
  * JYERSUI Enhanced by LCH-77
- * Version: 1.2
- * Date: Feb 12, 2022
+ * Version: 1.5
+ * Date: Feb 20, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
-#include "dwinui.h"
-//#include "../common/encoder.h"
-//#include "../../../libs/BL24CXX.h"
-//#include "../../../core/types.h"
 #include "dwin_defines.h"
+#include "../../../inc/MarlinConfig.h"
 
 enum processID : uint8_t {
   Main, Print, Menu, Value, Option, File, Popup, Confirm, Wait, Locked, Cancel
@@ -95,6 +92,40 @@ enum menuID : uint8_t {
   #endif
 };
 
+typedef struct {
+  // Flags
+  bool flag_tune = false;
+  bool auto_fw_retract = false;
+  bool printing = false;
+  bool paused = false;
+  bool sdprint = false;
+  bool livemove = false;
+  bool liveadjust = false;
+  bool probe_deployed = false;
+  // Auxiliary values
+  AxisEnum axis = X_AXIS;    // Axis Select
+  int16_t pausetemp = 0;
+  int16_t pausebed = 0;
+  int16_t pausefan = 0;
+  uint8_t preheatmode = 0;
+  uint8_t zoffsetmode = 0;
+  float zoffsetvalue = 0;
+  uint8_t gridpoint;
+  float corner_avg;
+  float corner_pos;
+  float zval;
+  #if ENABLED(PREHEAT_BEFORE_LEVELING)
+    uint8_t LevelingTempmode = 0;
+  #endif
+  #if JYENHANCED
+    bool cancel_lev = false;       // Cancel leveling
+    #if ENABLED(NOZZLE_PARK_FEATURE)
+      int16_t last_pos = 0;
+    #endif
+  #endif
+} temp_val_t;
+extern temp_val_t temp_val;
+
 #define Custom_Colors 10
 enum colorID : uint8_t {
   Default, White, Green, Cyan, Blue, Magenta, Red, Orange, Yellow, Brown, Black
@@ -105,6 +136,9 @@ public:
   static constexpr const char * const color_names[11] = { "Default", "White", "Green", "Cyan", "Blue", "Magenta", "Red", "Orange", "Yellow", "Brown", "Black" };
   static constexpr const char * const preheat_modes[3] = { "Both", "Hotend", "Bed" };
   static constexpr const char * const zoffset_modes[3] = { "No Live" , "OnClick", "   Live" };
+  #if ENABLED(PREHEAT_BEFORE_LEVELING)
+    static constexpr const char * const preheat_levmodes[4] = { "   Both", " Hotend", "    Bed", "   None" };
+  #endif
 
   static void Clear_Screen(uint8_t e=3);
   static void Draw_Float(float value, uint8_t row, bool selected=false, uint8_t minunit=10);
