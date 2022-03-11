@@ -24,7 +24,7 @@
 
 #if ENABLED(PLATFORM_M997_SUPPORT)
 
-#if ENABLED(DWIN_CREALITY_LCD_ENHANCED)
+#if ENABLED(DWIN_LCD_PROUI)
   #include "../../lcd/e3v2/proui/dwin.h"
 #elif ENABLED(DWIN_CREALITY_LCD_JYERSUI)
   #include "../../lcd/e3v2/jyersui/dwin.h"
@@ -35,7 +35,7 @@
  */
 void GcodeSuite::M997() {
 
-  TERN_(DWIN_CREALITY_LCD_ENHANCED, DWIN_RebootScreen());
+  TERN_(DWIN_LCD_PROUI, DWIN_RebootScreen());
   TERN_(DWIN_CREALITY_LCD_JYERSUI, CrealityDWIN.DWIN_RebootScreen());
 
   flashFirmware(parser.intval('S'));

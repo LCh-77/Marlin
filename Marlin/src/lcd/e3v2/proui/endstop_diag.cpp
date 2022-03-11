@@ -31,7 +31,7 @@
 
 #include "../../../inc/MarlinConfigPre.h"
 
-#if ENABLED(DWIN_CREALITY_LCD_ENHANCED)
+#if ENABLED(DWIN_LCD_PROUI)
 
 #include "dwin_defines.h"
 
@@ -112,4 +112,4 @@ void ESDiagClass::Update() {
 }
 
 #endif // HAS_ESDIAG
-#endif // DWIN_CREALITY_LCD_ENHANCED
+#endif // DWIN_LCD_PROUI
