@@ -974,8 +974,8 @@ void CrealityDWINClass::Update_Status_Bar(bool refresh/*=false*/) {
   static bool new_msg;
   static uint8_t msgscrl = 0;
   static char lastmsg[64];
-  if (strcmp_P(lastmsg, statusmsg) != 0 || refresh) {
-    strcpy_P(lastmsg, statusmsg);
+  if (strcmp(lastmsg, statusmsg) != 0 || refresh) {
+    strcpy(lastmsg, statusmsg);
     msgscrl = 0;
     new_msg = true;
   }
@@ -5060,7 +5060,7 @@ void CrealityDWINClass::Start_Print(bool sd) {
           card.selectFileByName(fname);
         }
       #endif
-      strcpy_P(filename, card.longest_filename());
+      strcpy(filename, card.longest_filename());
     }
     TERN_(LCD_SET_PROGRESS_MANUALLY, ui.set_progress(0));
     TERN_(USE_M73_REMAINING_TIME, ui.set_remaining_time(0));
