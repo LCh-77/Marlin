@@ -71,7 +71,7 @@ void ESDiagClass::Draw() {
   CrealityDWINClass::Draw_Title(F("End-stops Diagnostic"));
   DWINUI::ClearMenuArea();
   DWIN_Draw_Rectangle(0, Color_White, 14, 60, 258, 330);
-  DWINUI::Draw_Icon(ICON_Continue_E, 86, 250);
+  DWINUI::Draw_Button(BTN_Continue, 86, 250);
   DWINUI::cursor.y = 80;
   #define ES_LABEL(S) draw_es_label(F(STR_##S))
   #if HAS_X_MIN
