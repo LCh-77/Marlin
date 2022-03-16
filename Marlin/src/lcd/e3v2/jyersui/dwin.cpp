@@ -25,8 +25,8 @@
  * JYERSUI Author: Jacob Myers
  *
  * JYERSUI Enhanced by LCH-77
- * Version: 1.5
- * Date: Feb 20, 2022
+ * Version: 1.6
+ * Date: Mar 15, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
@@ -737,7 +737,7 @@ void CrealityDWINClass::Draw_Print_confirm() {
   process = Confirm;
   popup = Complete;
   DWIN_Draw_Rectangle(1, Color_Bg_Black, 8, 252, 263, 351);
-  DWIN_ICON_Show(ICON, ICON_Confirm_E, 87, 283);
+  DWINUI::Draw_Button(BTN_Confirm, 87, 283);
   DWIN_Draw_Rectangle(0, GetColor(eeprom_settings.highlight_box, Color_White), 86, 282, 187, 321);
   DWIN_Draw_Rectangle(0, GetColor(eeprom_settings.highlight_box, Color_White), 85, 281, 188, 322);
 }
@@ -939,20 +939,12 @@ void CrealityDWINClass::Draw_Popup(FSTR_P const line1, FSTR_P const line2, FSTR_
   DWIN_Draw_String(true, DWIN_FONT_MENU, Popup_Text_Color, Color_Bg_Window, (272 - 8 * strlen_P(FTOP(line3))) / 2, ypos + 60, line3);
   if (mode == Popup) {
     selection = 0;
-    DWIN_Draw_Rectangle(1, Confirm_Color, 26, 280, 125, 317);
-    DWIN_Draw_Rectangle(1, Cancel_Color, 146, 280, 245, 317);
-    DWIN_Draw_String(false, DWIN_FONT_STAT, Color_White, Color_Bg_Window, 39, 290, F("Confirm"));
-    DWIN_Draw_String(false, DWIN_FONT_STAT, Color_White, Color_Bg_Window, 165, 290, F("Cancel"));
+    DWINUI::Draw_Button(BTN_Confirm, 26, 280);
+    DWINUI::Draw_Button(BTN_Cancel, 146, 280);
     Popup_Select();
   }
-  else if (mode == Confirm) {
-    DWIN_Draw_Rectangle(1, Confirm_Color, 87, 280, 186, 317);
-    DWIN_Draw_String(false, DWIN_FONT_STAT, Color_White, Color_Bg_Window, 96, 290, F("Continue"));
-  }
-  else if (mode == Cancel) {
-    DWIN_Draw_Rectangle(1, Confirm_Color, 87, 280, 186, 317);
-    DWIN_Draw_String(false, DWIN_FONT_STAT, Color_White, Color_Bg_Window, 104, 290, F("Cancel"));
-  }
+  else if (mode == Confirm) DWINUI::Draw_Button(BTN_Continue, 87, 280);
+  else if (mode == Cancel) DWINUI::Draw_Button(BTN_Cancel, 87, 280);
 }
 
 void MarlinUI::kill_screen(FSTR_P const error, FSTR_P const) {
@@ -3790,7 +3782,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
           #if ENABLED(AUTO_BED_LEVELING_UBL)
             case LEVELING_SETTINGS_TILT:
               if (draw) {
-                Draw_Menu_Item(row, ICON_Tilt, F("Tilting Grid Size"));
+                Draw_Menu_Item(row, ICON_Tilt, F("Tilting Grid"));
                 Draw_Float(mesh_conf.tilt_grid, row, false, 1);
               }
               else
@@ -5622,8 +5614,6 @@ void MarlinUI::init_lcd() {
     DWIN_UpdateLCD();
     delay(20);
   }
-
-  DWIN_JPG_ShowAndCache(3);
   DWIN_JPG_CacheTo1(Language_English);
   CrealityDWIN.Redraw_Screen();
 }

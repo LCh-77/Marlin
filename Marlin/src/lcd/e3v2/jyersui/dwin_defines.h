@@ -24,10 +24,10 @@
 #define __DWINDEFINES__
 
 /**
- * DWIN general defines and data structs
- * Author: Miguel A. Risco-Castillo
- * Version: 3.10.3
- * Date: 2022/02/02
+ * DWIN general defines and data structs for PRO UI
+ * Author: Miguel A. Risco-Castillo (MRISCOC)
+ * Version: 3.11.2
+ * Date: 2022/02/28
  *
  * Modded for JYERSUI by LCH-77
  * Version: 1.5
@@ -66,6 +66,7 @@
 #define Def_Barfill_Color     BarFill_Color
 #define Def_Indicator_Color   Color_White
 #define Def_Coordinate_Color  Color_White
+#define Def_Button_Color      RGB( 0, 23, 16)
 
 #if HAS_MESH
   #ifndef MESH_INSET
