@@ -156,12 +156,6 @@ void DWINUI::Draw_CenteredString(bool bShow, uint8_t size, uint16_t color, uint1
   DWIN_Draw_String(bShow, size, color, bColor, x, y, string);
 }
 
-// // Draw a Centered string using DWIN_WIDTH
-// void DWINUI::Draw_CenteredString(bool bShow, uint8_t size, uint16_t color, uint16_t bColor, uint16_t y, const char * const string) {
-//   const int8_t x = _MAX(0U, DWIN_WIDTH - strlen_P(string) * fontWidth(size)) / 2 - 1;
-//   DWIN_Draw_String(bShow, size, color, bColor, x, y, string);
-// }
-
 // Draw a char at cursor position
 void DWINUI::Draw_Char(uint16_t color, const char c) {
   const char string[2] = { c, 0};
