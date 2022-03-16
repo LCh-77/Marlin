@@ -26,8 +26,8 @@
  * JYERSUI Author: Jacob Myers
  *
  * JYERSUI Enhanced by LCH-77
- * Version: 1.5
- * Date: Feb 20, 2022
+ * Version: 1.6
+ * Date: Mar 15, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
