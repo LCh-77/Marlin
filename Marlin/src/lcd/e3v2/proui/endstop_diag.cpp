@@ -21,7 +21,7 @@
  */
 
 /**
- * DWIN End Stops diagnostic page for PRO UI
+ * DWIN Endstops diagnostic page for PRO UI
  * Author: Miguel A. Risco-Castillo (MRISCOC)
  * Version: 1.2.2
  * Date: 2022/02/24
