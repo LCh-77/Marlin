@@ -68,6 +68,13 @@
 #define Def_Coordinate_Color  Color_White
 #define Def_Button_Color      RGB( 0, 23, 16)
 
+#if ENABLED(LED_CONTROL_MENU, HAS_COLOR_LEDS)
+  #define Def_Leds_Color      0xFFFFFFFF
+#endif
+#if ENABLED(CASELIGHT_USES_BRIGHTNESS)
+  #define Def_CaseLight_Brightness 255
+#endif
+
 #if HAS_MESH
   #ifndef MESH_INSET
     #define MESH_INSET 25

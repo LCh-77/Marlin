@@ -99,6 +99,14 @@
   #include "lockscreen.h"
 #endif
 
+#if ENABLED(CASE_LIGHT_MENU)
+  #include "../../../feature/caselight.h"
+#endif
+
+#if ENABLED(LED_CONTROL_MENU)
+  #include "../../../feature/leds/leds.h"
+#endif
+
 #define MENU_CHAR_LIMIT  24
 #define STATUS_CHAR_LIMIT  30
 
@@ -139,6 +147,11 @@ constexpr float default_max_acceleration[]    = DEFAULT_MAX_ACCELERATION;
 constexpr float default_steps[]               = DEFAULT_AXIS_STEPS_PER_UNIT;
 #if HAS_CLASSIC_JERK
   constexpr float default_max_jerk[]            = { DEFAULT_XJERK, DEFAULT_YJERK, DEFAULT_ZJERK, DEFAULT_EJERK };
+#endif
+
+#if HAS_JUNCTION_DEVIATION
+  #define MIN_JD_MM  0.01
+  #define MAX_JD_MM  0.3
 #endif
 
 enum SelectItem : uint8_t {
@@ -744,7 +757,7 @@ void CrealityDWINClass::Draw_Print_confirm() {
 
 void CrealityDWINClass::Draw_SD_Item(uint8_t item, uint8_t row) {
   if (item == 0)
-    Draw_Menu_Item(0, ICON_Back, card.flag.workDirIsRoot ? F("Back") : F(".."));
+    Draw_Menu_Item(0, ICON_Back, card.flag.workDirIsRoot ? GET_TEXT_F(MSG_BACK) : F(".."));
   else {
     card.getfilename_sorted(SD_ORDER(item - 1, card.get_num_Files()));
     char * const filename = card.longest_filename();
@@ -774,7 +787,7 @@ void CrealityDWINClass::Draw_SD_List(bool removed/*=false*/) {
       Draw_SD_Item(i, i);
   }
   else {
-    Draw_Menu_Item(0, ICON_Back, F("Back"));
+    Draw_Menu_Item(0, ICON_Back, GET_TEXT_F(MSG_BACK));
     DWIN_Draw_Rectangle(1, Color_Bg_Red, 10, MBASE(3) - 10, DWIN_WIDTH - 10, MBASE(4));
     DWIN_Draw_String(false, font16x32, Color_Yellow, Color_Bg_Red, ((DWIN_WIDTH) - 8 * 16) / 2, MBASE(3), F("No Media"));
   }
@@ -1039,7 +1052,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case PREPARE_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else
             Draw_Main_Menu(1);
           break;
@@ -1153,7 +1166,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case HOME_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else
             Draw_Menu(Prepare, PREPARE_HOME);
           break;
@@ -1221,7 +1234,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case MOVE_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else {
             #if HAS_BED_PROBE
               temp_val.probe_deployed = false;
@@ -1325,7 +1338,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case MLEVEL_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else {
             TERN_(HAS_LEVELING, set_bed_leveling_enabled(level_state));
             Draw_Menu(Prepare, PREPARE_MANUALLEVEL);
@@ -1509,7 +1522,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case ZOFFSET_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else {
               temp_val.zoffsetmode = 0;
               #if !HAS_BED_PROBE
@@ -1615,7 +1628,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case PREHEAT_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(Prepare, PREPARE_PREHEAT);
             break;
@@ -1688,7 +1701,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case CHANGEFIL_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(Prepare, PREPARE_CHANGEFIL);
             break;
@@ -1757,7 +1770,8 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define CONTROL_MOTION (CONTROL_TEMP + 1)
       #define CONTROL_FWRETRACT (CONTROL_MOTION + ENABLED(FWRETRACT))
       #define CONTROL_PARKMENU (CONTROL_FWRETRACT + ENABLED(NOZZLE_PARK_FEATURE, JYENHANCED))
-      #define CONTROL_VISUAL (CONTROL_PARKMENU + 1)
+      #define CONTROL_LEDS (CONTROL_PARKMENU + ANY(CASE_LIGHT_MENU, LED_CONTROL_MENU))
+      #define CONTROL_VISUAL (CONTROL_LEDS + 1)
       #define CONTROL_ADVANCED (CONTROL_VISUAL + 1)
       #define CONTROL_SAVE (CONTROL_ADVANCED + ENABLED(EEPROM_SETTINGS))
       #define CONTROL_RESTORE (CONTROL_SAVE + ENABLED(EEPROM_SETTINGS))
@@ -1769,7 +1783,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case CONTROL_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else
             Draw_Main_Menu(2);
           break;
@@ -1800,6 +1814,14 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
           else
             Draw_Menu(Parkmenu);
           break;
+        #endif
+        #if ANY(CASE_LIGHT_MENU, LED_CONTROL_MENU)
+          case CONTROL_LEDS:
+            if (draw)
+              Draw_Menu_Item(row, ICON_LedControl, GET_TEXT_F(MSG_LEDS), nullptr, true);
+            else
+              Draw_Menu(Ledsmenu);
+            break;
         #endif
         case CONTROL_VISUAL:
           if (draw)
@@ -1868,7 +1890,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case TEMP_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else
             Draw_Menu(Control, CONTROL_TEMP);
           break;
@@ -1967,7 +1989,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case PID_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(TempMenu, TEMP_PID);
             break;
@@ -2015,7 +2037,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case HOTENDPID_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(PID, PID_HOTEND);
             break;
@@ -2082,7 +2104,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case BEDPID_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(PID, PID_BED);
             break;
@@ -2146,7 +2168,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case PREHEAT1_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(TempMenu, TEMP_PREHEAT1);
             break;
@@ -2196,7 +2218,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case PREHEAT2_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(TempMenu, TEMP_PREHEAT2);
             break;
@@ -2246,7 +2268,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case PREHEAT3_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(TempMenu, TEMP_PREHEAT3);
             break;
@@ -2296,7 +2318,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case PREHEAT4_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(TempMenu, TEMP_PREHEAT4);
             break;
@@ -2346,7 +2368,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case PREHEAT5_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(TempMenu, TEMP_PREHEAT5);
             break;
@@ -2391,7 +2413,8 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define MOTION_SPEED (MOTION_HOMEOFFSETS + 1)
       #define MOTION_ACCEL (MOTION_SPEED + 1)
       #define MOTION_JERK (MOTION_ACCEL + ENABLED(HAS_CLASSIC_JERK))
-      #define MOTION_STEPS (MOTION_JERK + 1)
+      #define MOTION_JD (MOTION_JERK + ENABLED(HAS_JUNCTION_DEVIATION))
+      #define MOTION_STEPS (MOTION_JD + 1)
       #define MOTION_INVERT_E0 (MOTION_STEPS + (ENABLED(HAS_HOTEND, JYENHANCED)))
       #define MOTION_FLOW (MOTION_INVERT_E0 + ENABLED(HAS_HOTEND))
       #define MOTION_TOTAL MOTION_FLOW
@@ -2399,7 +2422,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case MOTION_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else
             Draw_Menu(Control, CONTROL_MOTION);
           break;
@@ -2427,6 +2450,14 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
               Draw_Menu_Item(row, ICON_MaxJerk, F("Max Jerk"), nullptr, true);
             else
               Draw_Menu(MaxJerk);
+            break;
+        #endif
+        #if HAS_JUNCTION_DEVIATION
+          case MOTION_JD:
+            if (draw)
+              Draw_Menu_Item(row, ICON_MaxJerk, F("Junction Deviation"), nullptr, true);
+            else
+              Draw_Menu(JDmenu);
             break;
         #endif
         case MOTION_STEPS:
@@ -2609,7 +2640,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case HOMEOFFSETS_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else
             Draw_Menu(Motion, MOTION_HOMEOFFSETS);
           break;
@@ -2643,7 +2674,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case SPEED_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else
             Draw_Menu(Motion, MOTION_SPEED);
           break;
@@ -2703,7 +2734,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case ACCEL_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else
             Draw_Menu(Motion, MOTION_ACCEL);
           break;
@@ -2756,7 +2787,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case JERK_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(Motion, MOTION_JERK);
             break;
@@ -2797,6 +2828,33 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         }
         break;
     #endif
+    #if HAS_JUNCTION_DEVIATION
+      case JDmenu:
+
+        #define JD_BACK 0
+        #define JD_SETTING_JD_MM (JD_BACK + ENABLED(HAS_HOTEND))
+        #define JD_TOTAL JD_SETTING_JD_MM
+
+        switch (item) {
+          case JD_BACK:
+            if (draw)
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
+            else
+              Draw_Menu(Motion, MOTION_JD);
+            break;
+          #if HAS_HOTEND
+            case JD_SETTING_JD_MM:
+              if (draw) {
+                Draw_Menu_Item(row, ICON_MaxJerk, GET_TEXT_F(MSG_JUNCTION_DEVIATION));
+                Draw_Float(planner.junction_deviation_mm, row, false, 100);
+              }
+              else
+                Modify_Value(planner.junction_deviation_mm, MIN_JD_MM, MAX_JD_MM, 100);
+              break;
+            #endif
+        }
+        break;
+    #endif
     case Steps:
 
       #define STEPS_BACK 0
@@ -2809,7 +2867,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case STEPS_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else
             Draw_Menu(Motion, MOTION_STEPS);
           break;
@@ -2850,6 +2908,235 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       }
       break;
 
+    #if ANY(CASE_LIGHT_MENU, LED_CONTROL_MENU)
+      case Ledsmenu:
+
+        #define LEDS_BACK 0
+        #define LEDS_CASELIGHT (LEDS_BACK + ENABLED(CASE_LIGHT_MENU))
+        #define LEDS_LED_CONTROL_MENU (LEDS_CASELIGHT + ENABLED(LED_CONTROL_MENU))
+        #define LEDS_TOTAL LEDS_LED_CONTROL_MENU
+
+        switch (item) {
+
+        case LEDS_BACK:
+          if (draw)
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
+          else
+            Draw_Menu(Control, CONTROL_LEDS);
+          break;
+        #if ENABLED(CASE_LIGHT_MENU)
+          case LEDS_CASELIGHT:
+            if (draw) {
+              #if ENABLED(CASELIGHT_USES_BRIGHTNESS)
+                Draw_Menu_Item(row, ICON_CaseLight, GET_TEXT_F(MSG_CASE_LIGHT), nullptr, true); 
+              #else
+                Draw_Menu_Item(row, ICON_CaseLight, GET_TEXT_F(MSG_CASE_LIGHT));
+                Draw_Checkbox(row, caselight.on);
+              #endif
+            }
+            else {
+              #if ENABLED(CASELIGHT_USES_BRIGHTNESS)
+                Draw_Menu(CaseLightmenu);
+              #else
+                caselight.on = !caselight.on;
+                caselight.update_enabled();
+                Draw_Checkbox(row, caselight.on);
+                DWIN_UpdateLCD();
+              #endif
+            }
+            break;
+        #endif
+        #if ENABLED(LED_CONTROL_MENU)
+          case LEDS_LED_CONTROL_MENU:
+            if (draw)
+              Draw_Menu_Item(row, ICON_LedControl, GET_TEXT_F(MSG_LED_CONTROL), nullptr, true); 
+            else 
+              Draw_Menu(LedControlmenu);
+            break;
+        #endif
+        }
+      break;
+    #endif
+
+    #if ENABLED(CASE_LIGHT_MENU, CASELIGHT_USES_BRIGHTNESS)
+      case CaseLightmenu:
+
+        #define CASE_LIGHT_BACK 0
+        #define CASE_LIGHT_ON (CASE_LIGHT_BACK + 1)
+        #define CASE_LIGHT_USES_BRIGHT (CASE_LIGHT_ON + 1)
+        #define CASE_LIGHT_TOTAL CASE_LIGHT_USES_BRIGHT
+
+        switch (item) {
+
+          case CASE_LIGHT_BACK:
+            if (draw)
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
+            else
+              Draw_Menu(Ledsmenu, LEDS_CASELIGHT);
+            break;
+          case CASE_LIGHT_ON:
+            if (draw) {
+                Draw_Menu_Item(row, ICON_CaseLight, GET_TEXT_F(MSG_CASE_LIGHT));
+                Draw_Checkbox(row, caselight.on);
+            }
+            else {
+                caselight.on = !caselight.on;
+                caselight.update_enabled();
+                Draw_Checkbox(row, caselight.on);
+                DWIN_UpdateLCD();
+            }
+            break;
+          case CASE_LIGHT_USES_BRIGHT:
+            if (draw) {
+              Draw_Menu_Item(row, ICON_Brightness, GET_TEXT_F(MSG_CASE_LIGHT_BRIGHTNESS));
+              Draw_Float(caselight.brightness, row);
+            }
+            else
+              Modify_Value(caselight.brightness, 0, 255, 1);
+            break;
+        }
+      break;
+    #endif
+
+    #if ENABLED(LED_CONTROL_MENU)
+      case LedControlmenu:
+
+        #define LEDCONTROL_BACK 0
+        #define LEDCONTROL_LIGHTON (LEDCONTROL_BACK + !BOTH(CASE_LIGHT_MENU, CASE_LIGHT_USE_NEOPIXEL))
+        #define LEDCONTROL_PRESETS_MENU (LEDCONTROL_LIGHTON + BOTH(HAS_COLOR_LEDS, LED_COLOR_PRESETS))
+        #define LEDCONTROL_CUSTOM_MENU (LEDCONTROL_PRESETS_MENU + ENABLED(HAS_COLOR_LEDS) - DISABLED(LED_COLOR_PRESETS))
+        #define LEDCONTROL_TOTAL LEDCONTROL_CUSTOM_MENU
+
+        switch (item) {
+          case LEDCONTROL_BACK:
+            if (draw)
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
+            else
+              Draw_Menu(Ledsmenu, LEDS_LED_CONTROL_MENU);
+            break;
+          #if !BOTH(CASE_LIGHT_MENU, CASE_LIGHT_USE_NEOPIXEL)
+            case LEDCONTROL_LIGHTON:
+              if (draw) {
+                Draw_Menu_Item(row, ICON_LedControl, GET_TEXT_F(MSG_LEDS));
+                Draw_Checkbox(row, leds.lights_on);
+              }
+              else {
+                leds.toggle();
+                Draw_Checkbox(row, leds.lights_on);
+                DWIN_UpdateLCD();
+              }
+              break; 
+          #endif
+          #if HAS_COLOR_LEDS
+            #if ENABLED(LED_COLOR_PRESETS)
+              case LEDCONTROL_PRESETS_MENU:
+                  if (draw)
+                    Draw_Menu_Item(row, ICON_LedControl, GET_TEXT_F(MSG_LED_PRESETS));
+                  else 
+                    Draw_Menu(LedControlpresets);
+                break;
+            #else
+              case LEDCONTROL_CUSTOM_MENU:
+                if (draw)
+                  Draw_Menu_Item(row, ICON_LedControl, GET_TEXT_F(MSG_CUSTOM_LEDS));
+                else 
+                  Draw_Menu(LedControlcustom);
+                break;
+            #endif
+          #endif
+        }
+        break;
+
+        #if HAS_COLOR_LEDS
+          #if ENABLED(LED_COLOR_PRESETS)
+            case LedControlpresets:
+
+              #define LEDCONTROL_PRESETS_BACK 0
+              #define LEDCONTROL_PRESETS_WHITE (LEDCONTROL_PRESETS_BACK + 1)
+              #define LEDCONTROL_PRESETS_RED (LEDCONTROL_PRESETS_WHITE + 1)
+              #define LEDCONTROL_PRESETS_ORANGE (LEDCONTROL_PRESETS_RED + 1)
+              #define LEDCONTROL_PRESETS_YELLOW (LEDCONTROL_PRESETS_ORANGE + 1)
+              #define LEDCONTROL_PRESETS_GREEN (LEDCONTROL_PRESETS_YELLOW + 1)
+              #define LEDCONTROL_PRESETS_BLUE (LEDCONTROL_PRESETS_GREEN + 1)
+              #define LEDCONTROL_PRESETS_INDIGO (LEDCONTROL_PRESETS_BLUE + 1)
+              #define LEDCONTROL_PRESETS_VIOLET (LEDCONTROL_PRESETS_INDIGO + 1)
+              #define LEDCONTROL_PRESETS_TOTAL LEDCONTROL_PRESETS_VIOLET
+
+              #define LEDCOLORITEM(MSG,FUNC) if (draw) Draw_Menu_Item(row, ICON_LedControl, GET_TEXT_F(MSG)); else FUNC; break;
+
+              switch (item) {
+                case LEDCONTROL_PRESETS_BACK:
+                  if (draw)
+                    Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
+                  else
+                    Draw_Menu(LedControlmenu, LEDCONTROL_PRESETS_MENU);
+                  break;
+                case LEDCONTROL_PRESETS_WHITE:  LEDCOLORITEM(MSG_SET_LEDS_WHITE, leds.set_white());
+                case LEDCONTROL_PRESETS_RED:    LEDCOLORITEM(MSG_SET_LEDS_RED, leds.set_red());
+                case LEDCONTROL_PRESETS_ORANGE: LEDCOLORITEM(MSG_SET_LEDS_ORANGE, leds.set_orange());
+                case LEDCONTROL_PRESETS_YELLOW: LEDCOLORITEM(MSG_SET_LEDS_YELLOW, leds.set_yellow());
+                case LEDCONTROL_PRESETS_GREEN:  LEDCOLORITEM(MSG_SET_LEDS_GREEN, leds.set_green());
+                case LEDCONTROL_PRESETS_BLUE:   LEDCOLORITEM(MSG_SET_LEDS_BLUE, leds.set_blue());
+                case LEDCONTROL_PRESETS_INDIGO: LEDCOLORITEM(MSG_SET_LEDS_INDIGO, leds.set_indigo());
+                case LEDCONTROL_PRESETS_VIOLET: LEDCOLORITEM(MSG_SET_LEDS_VIOLET, leds.set_violet());
+              }
+              break;
+          #else
+            case LedControlcustom:
+
+              #define LEDCONTROL_CUSTOM_BACK 0
+              #define LEDCONTROL_CUSTOM_RED (LEDCONTROL_CUSTOM_BACK + 1)
+              #define LEDCONTROL_CUSTOM_GREEN (LEDCONTROL_CUSTOM_RED + 1)
+              #define LEDCONTROL_CUSTOM_BLUE (LEDCONTROL_CUSTOM_GREEN + 1)
+              #define LEDCONTROL_CUSTOM_WHITE (LEDCONTROL_CUSTOM_BLUE + ENABLED(HAS_WHITE_LED))
+              #define LEDCONTROL_CUSTOM_TOTAL LEDCONTROL_CUSTOM_WHITE
+
+              switch (item) {
+                case LEDCONTROL_PRESETS_BACK:
+                  Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
+                  else
+                    Draw_Menu(LedControlmenu, LEDCONTROL_CUSTOM_MENU);
+                  break;
+                case LEDCONTROL_CUSTOM_RED:
+                  if (draw) {
+                    Draw_Menu_Item(row, ICON_LedControl, GET_TEXT_F(MSG_INTENSITY_R));
+                    Draw_Float(leds.color.r, row);
+                  }
+                  else
+                    Modify_Value(leds.color.r, 0, 255, 1);
+                  break;
+                case LEDCONTROL_CUSTOM_GREEN:
+                  if (draw) {
+                    Draw_Menu_Item(row, ICON_LedControl, GET_TEXT_F(MSG_INTENSITY_G));
+                    Draw_Float(leds.color.g, row);
+                  }
+                  else
+                    Modify_Value(leds.color.g, 0, 255, 1);
+                  break;
+                case LEDCONTROL_CUSTOM_BLUE:
+                  if (draw) {
+                    Draw_Menu_Item(row, ICON_LedControl, GET_TEXT_F(MSG_INTENSITY_B));
+                    Draw_Float(leds.color.b, row);
+                  }
+                  else
+                    Modify_Value(leds.color.b, 0, 255, 1);
+                  break;
+                #if HAS_WHITE_LED
+                  case case LEDCONTROL_CUSTOM_WHITE:
+                    if (draw) {
+                      Draw_Menu_Item(row, ICON_LedControl, GET_TEXT_F(MSG_INTENSITY_W));
+                      Draw_Float(leds.color.w, row);
+                    }
+                    else
+                      Modify_Value(leds.color.w, 0, 255, 1);
+                    break;
+                #endif
+              }
+              break;
+          #endif
+        #endif
+    #endif
+
     case Visual:
 
       #define VISUAL_BACK 0
@@ -2862,7 +3149,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case VISUAL_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else
             Draw_Menu(Control, CONTROL_VISUAL);
           break;
@@ -2874,7 +3161,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
           break;
         case VISUAL_BRIGHTNESS:
           if (draw) {
-            Draw_Menu_Item(row, ICON_Brightness, F("LCD Brightness"));
+            Draw_Menu_Item(row, ICON_Brightness,  GET_TEXT_F(MSG_BRIGHTNESS));
             Draw_Float(ui.brightness, row, false, 1);
           }
           else
@@ -2918,7 +3205,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case COLORSETTINGS_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else
             Draw_Menu(Visual, VISUAL_COLOR_THEMES);
           break;
@@ -3035,7 +3322,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case ADVANCED_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else
             Draw_Menu(Control, CONTROL_ADVANCED);
           break;
@@ -3043,7 +3330,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         #if ENABLED(SOUND_MENU_ITEM)
           case ADVANCED_BEEPER:
             if (draw) {
-              Draw_Menu_Item(row, ICON_Version, F("LCD Beeper"));
+              Draw_Menu_Item(row, ICON_Sound, F("LCD Beeper"));
               Draw_Checkbox(row, ui.buzzer_enabled);
             }
             else {
@@ -3313,7 +3600,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case PROBE_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(Advanced, ADVANCED_PROBE);
             break;
@@ -3418,7 +3705,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       switch (item) {
         case INFO_BACK:
           if (draw) {
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
 
             #if ENABLED(PRINTCOUNTER)
               char row1[50], row2[50], buf[32];
@@ -3473,7 +3760,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case LEVELING_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Main_Menu(3);
             break;
@@ -3689,7 +3976,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case LEVELING_VIEW_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(Leveling, LEVELING_VIEW);
             break;
@@ -3738,7 +4025,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case LEVELING_SETTINGS_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else
               Draw_Menu(Leveling, LEVELING_SETTINGS);
             break;
@@ -3820,7 +4107,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
 
         if (item == MESHVIEW_BACK) {
           if (draw) {
-            Draw_Menu_Item(0, ICON_Back, F("Back"));
+            Draw_Menu_Item(0, ICON_Back, GET_TEXT_F(MSG_BACK));
             mesh_conf.Draw_Bed_Mesh();
             mesh_conf.Set_Mesh_Viewer_Status();
           }
@@ -3847,7 +4134,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case LEVELING_M_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else {
               set_bed_leveling_enabled(level_state);
               TERN_(AUTO_BED_LEVELING_BILINEAR, refresh_bed_level());
@@ -3960,7 +4247,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         switch (item) {
           case UBL_M_BACK:
             if (draw)
-              Draw_Menu_Item(row, ICON_Back, F("Back"));
+              Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
             else {
               set_bed_leveling_enabled(level_state);
               Draw_Menu(Leveling, LEVELING_GET_MESH);
@@ -4162,13 +4449,15 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define TUNE_FILSENSORENABLED (TUNE_CHANGEFIL + ENABLED(FILAMENT_RUNOUT_SENSOR))
       #define TUNE_BACKLIGHT_OFF (TUNE_FILSENSORENABLED + 1)
       #define TUNE_BACKLIGHT (TUNE_BACKLIGHT_OFF + 1)
-      #define TUNE_LOCKSCREEN (TUNE_BACKLIGHT + ENABLED(HAS_LOCKSCREEN))
+      #define TUNE_CASELIGHT (TUNE_BACKLIGHT + ENABLED(CASE_LIGHT_MENU))
+      #define TUNE_LEDCONTROL (TUNE_CASELIGHT + (ENABLED(LED_CONTROL_MENU) && DISABLED(CASE_LIGHT_USE_NEOPIXEL)))
+      #define TUNE_LOCKSCREEN (TUNE_LEDCONTROL + ENABLED(HAS_LOCKSCREEN))
       #define TUNE_TOTAL TUNE_LOCKSCREEN
 
       switch (item) {
         case TUNE_BACK:
           if (draw)
-            Draw_Menu_Item(row, ICON_Back, F("Back"));
+            Draw_Menu_Item(row, ICON_Back, GET_TEXT_F(MSG_BACK));
           else
             Draw_Print_Screen();
           break;
@@ -4293,12 +4582,37 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
           break;
         case TUNE_BACKLIGHT:
           if (draw) {
-            Draw_Menu_Item(row, ICON_Brightness, F("LCD Brightness"));
+            Draw_Menu_Item(row, ICON_Brightness,  GET_TEXT_F(MSG_BRIGHTNESS));
             Draw_Float(ui.brightness, row, false, 1);
           }
           else
             Modify_Value(ui.brightness, LCD_BRIGHTNESS_MIN, LCD_BRIGHTNESS_MAX, 1, ui.refresh_brightness);
           break;
+        #if ENABLED(CASE_LIGHT_MENU)
+          case TUNE_CASELIGHT:
+            if (draw) {
+                Draw_Menu_Item(row, ICON_CaseLight, GET_TEXT_F(MSG_CASE_LIGHT));
+                Draw_Checkbox(row, caselight.on);
+            }
+            else {
+                caselight.on = !caselight.on;
+                caselight.update_enabled();
+                Draw_Checkbox(row, caselight.on);
+            }
+            break;  
+        #endif
+        #if ENABLED(LED_CONTROL_MENU) && DISABLED(CASE_LIGHT_USE_NEOPIXEL)
+          case TUNE_LEDCONTROL:
+            if (draw) {
+                Draw_Menu_Item(row, ICON_LedControl, GET_TEXT_F(MSG_LEDS));
+                Draw_Checkbox(row, leds.lights_on);
+            }
+            else {
+                leds.toggle();
+                Draw_Checkbox(row, leds.lights_on);
+            }
+            break;
+        #endif
         #if HAS_LOCKSCREEN
           case TUNE_LOCKSCREEN:
             if (draw) 
@@ -4480,6 +4794,9 @@ FSTR_P CrealityDWINClass::Get_Menu_Title(uint8_t menu) {
     #if HAS_CLASSIC_JERK
       case MaxJerk:         return F("Max Jerk");
     #endif
+    #if HAS_JUNCTION_DEVIATION
+      case JDmenu:          return F("Junction Deviation");
+    #endif
     case Steps:             return F("Steps/mm");
     case Visual:            return F("Visual Settings");
     case Advanced:          return F("Advanced Settings");
@@ -4504,6 +4821,22 @@ FSTR_P CrealityDWINClass::Get_Menu_Title(uint8_t menu) {
     #endif
     case Tune:              return F("Tune");
     case PreheatHotend:     return F("Preheat Hotend");
+    #if ANY(CASE_LIGHT_MENU, LED_CONTROL_MENU)
+      case Ledsmenu:        return F("Light Settings");
+      #if ENABLED(CASE_LIGHT_MENU, CASELIGHT_USES_BRIGHTNESS)
+        case CaseLightmenu: return GET_TEXT_F(MSG_CASE_LIGHT);
+      #endif
+      #if ENABLED(LED_CONTROL_MENU)
+        case LedControlmenu: return GET_TEXT_F(MSG_LED_CONTROL);
+        #if HAS_COLOR_LEDS
+          #if ENABLED(LED_COLOR_PRESETS)
+            case LedControlpresets: return GET_TEXT_F(MSG_LED_PRESETS);
+          #else
+            case LedControlcustom: return GET_TEXT_F(MSG_CUSTOM_LEDS);
+          #endif
+        #endif
+      #endif
+    #endif
     #if JYENHANCED
       #if ENABLED(NOZZLE_PARK_FEATURE)
         case Parkmenu:      return GET_TEXT_F(MSG_FILAMENT_PARK_ENABLED);
@@ -4565,6 +4898,9 @@ uint8_t CrealityDWINClass::Get_Menu_Size(uint8_t menu) {
     #if HAS_CLASSIC_JERK
       case MaxJerk:         return JERK_TOTAL;
     #endif
+    #if HAS_JUNCTION_DEVIATION
+      case JDmenu:          return JD_TOTAL;
+    #endif
     case Steps:             return STEPS_TOTAL;
     case Visual:            return VISUAL_TOTAL;
     case Advanced:          return ADVANCED_TOTAL;
@@ -4589,6 +4925,22 @@ uint8_t CrealityDWINClass::Get_Menu_Size(uint8_t menu) {
     case Tune:              return TUNE_TOTAL;
     case PreheatHotend:     return PREHEATHOTEND_TOTAL;
     case ColorSettings:     return COLORSETTINGS_TOTAL;
+    #if ANY(CASE_LIGHT_MENU, LED_CONTROL_MENU)
+      case Ledsmenu:         return LEDS_TOTAL;
+      #if ENABLED(CASE_LIGHT_MENU, CASELIGHT_USES_BRIGHTNESS)
+        case CaseLightmenu: return CASE_LIGHT_TOTAL;
+      #endif
+      #if ENABLED(LED_CONTROL_MENU)
+        case LedControlmenu: return LEDCONTROL_TOTAL;
+        #if HAS_COLOR_LEDS
+          #if ENABLED(LED_COLOR_PRESETS)
+            case LedControlpresets: return LEDCONTROL_PRESETS_TOTAL;
+          #else
+            case LedControlcustom: return LEDCONTROL_CUSTOM_TOTAL;
+          #endif
+        #endif
+      #endif
+    #endif
     #if JYENHANCED
       #if ENABLED(NOZZLE_PARK_FEATURE) 
         case Parkmenu:        return PARKMENU_TOTAL;
@@ -4750,6 +5102,17 @@ void CrealityDWINClass::Value_Control() {
     }
     if (valuepointer == &planner.flow_percentage[0])
       planner.refresh_e_factor(0);
+    #if ENABLED(CASE_LIGHT_MENU, CASELIGHT_USES_BRIGHTNESS)
+      if (valuepointer == &caselight.brightness)
+        caselight.update_brightness();
+    #endif
+    #if HAS_COLOR_LEDS
+      if ((valuepointer == &leds.color.r) || (valuepointer == &leds.color.g) || (valuepointer == &leds.color.b))
+        ApplyLEDColor();
+        #if HAS_WHITE_LED
+          if (valuepointer == &leds.color.w) ApplyLEDColor();
+        #endif
+    #endif
 
     #if JYENHANCED
       if (active_menu == PhySetMenu) {
@@ -4801,6 +5164,18 @@ void CrealityDWINClass::Value_Control() {
         planner.synchronize();
       }
       break;
+    #if ENABLED(CASE_LIGHT_MENU, CASELIGHT_USES_BRIGHTNESS)
+      case CaseLightmenu:
+        *(uint8_t*)valuepointer = tempvalue / valueunit;
+        caselight.update_brightness();
+        break;
+    #endif
+    #if ENABLED(LED_CONTROL_MENU, HAS_COLOR_LEDS)
+      case LedControlmenu:
+        *(uint8_t*)valuepointer = tempvalue / valueunit;
+        leds.update();
+        break;
+    #endif
     default : break;
   }
 }
@@ -5513,6 +5888,20 @@ void CrealityDWINClass::Load_Settings(const char *buff) {
   if (eeprom_settings.corner_pos == 0) eeprom_settings.corner_pos = 325;
   temp_val.corner_pos = eeprom_settings.corner_pos / 10.0f;
   if (eeprom_settings.Baud115k) queue.inject(F("M575 P0 B115200"));
+  #if ENABLED(FWRETRACT)
+    temp_val.auto_fw_retract = fwretract.autoretract_enabled;
+  #endif
+  #if ENABLED(PREHEAT_BEFORE_LEVELING)
+    temp_val.LevelingTempmode = 2 * !eeprom_settings.ena_hotend_levtemp + !eeprom_settings.ena_bed_levtemp;
+  #endif
+  #if ENABLED(LED_CONTROL_MENU, HAS_COLOR_LEDS)
+    leds.set_color(
+    (temp_val.LED_Color >> 16) & 0xFF,
+    (temp_val.LED_Color >>  8) & 0xFF,
+    (temp_val.LED_Color >>  0) & 0xFF
+    OPTARG(HAS_WHITE_LED, (temp_val.LED_Color >> 24) & 0xFF)
+    );
+  #endif
   Redraw_Screen();
   #if ENABLED(POWER_LOSS_RECOVERY)
     static bool init = true;
@@ -5520,12 +5909,6 @@ void CrealityDWINClass::Load_Settings(const char *buff) {
       init = false;
       queue.inject(F("M1000 S"));
     }
-  #endif
-  #if ENABLED(FWRETRACT)
-    temp_val.auto_fw_retract = fwretract.autoretract_enabled;
-  #endif
-  #if ENABLED(PREHEAT_BEFORE_LEVELING)
-    temp_val.LevelingTempmode = 2 * !eeprom_settings.ena_hotend_levtemp + !eeprom_settings.ena_bed_levtemp;
   #endif
 }
 
@@ -5554,6 +5937,19 @@ void CrealityDWINClass::Reset_Settings() {
     eeprom_settings.ena_bed_levtemp = true;
     eeprom_settings.hotend_levtemp = LEVELING_NOZZLE_TEMP;
     eeprom_settings.bed_levtemp = LEVELING_BED_TEMP;
+  #endif
+  #if ENABLED(LED_CONTROL_MENU, HAS_COLOR_LEDS)
+    leds.setup();
+    #if ENABLED(LED_COLOR_PRESETS)
+      leds.set_default();
+    #endif
+      temp_val.LED_Color = Def_Leds_Color;
+      leds.set_color(
+      (temp_val.LED_Color >> 16) & 0xFF,
+      (temp_val.LED_Color >>  8) & 0xFF,
+      (temp_val.LED_Color >>  0) & 0xFF
+      OPTARG(HAS_WHITE_LED, (temp_val.LED_Color >> 24) & 0xFF)
+      );
   #endif
   #if JYENHANCED
     eeprom_settings.Invert_E0 = DEF_INVERT_E0_DIR;
@@ -5684,6 +6080,12 @@ void CrealityDWINClass::RebootPrinter() {
   DWIN_RebootScreen();
   hal.reboot();
 }
+
+#if ENABLED(LED_CONTROL_MENU, HAS_COLOR_LEDS)
+  void CrealityDWINClass::ApplyLEDColor() {
+    temp_val.LED_Color = TERN0(HAS_WHITE_LED,(leds.color.w << 24)) | (leds.color.r << 16) | (leds.color.g << 8) | (leds.color.b);
+  }
+#endif
 
 #if JYENHANCED
   // Invert Extruder
