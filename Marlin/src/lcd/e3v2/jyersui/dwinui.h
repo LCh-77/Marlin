@@ -79,6 +79,9 @@
   #define ICON_FWRecExtLength       ICON_StepE
   #define ICON_FWRecSpeed           ICON_Setspeed
   #define ICON_HSMode               ICON_StockConfiguration
+  #define ICON_Sound                ICON_Cool
+  #define ICON_CaseLight            ICON_Motion
+  #define ICON_LedControl           ICON_Motion
 #endif
 
 #if JYENHANCED
