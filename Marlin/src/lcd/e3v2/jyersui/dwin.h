@@ -69,6 +69,7 @@ enum menuID : uint8_t {
         MaxSpeed,
         MaxAcceleration,
         MaxJerk,
+        JDmenu,
         Steps,
       FwRetraction,
       Visual,
@@ -86,6 +87,22 @@ enum menuID : uint8_t {
     InfoMain,
   Tune,
   PreheatHotend,
+  #if ANY(CASE_LIGHT_MENU, LED_CONTROL_MENU)
+    Ledsmenu,
+    #if BOTH(CASE_LIGHT_MENU, CASELIGHT_USES_BRIGHTNESS)
+      CaseLightmenu,
+    #endif
+    #if ENABLED(LED_CONTROL_MENU)
+      LedControlmenu,
+      #if HAS_COLOR_LEDS
+        #if ENABLED(LED_COLOR_PRESETS)
+          LedControlpresets,
+        #else
+          LedControlcustom,
+        #endif
+      #endif
+    #endif
+  #endif
   #if JYENHANCED
     Parkmenu,
     PhySetMenu,
@@ -116,6 +133,9 @@ typedef struct {
   float zval;
   #if ENABLED(PREHEAT_BEFORE_LEVELING)
     uint8_t LevelingTempmode = 0;
+  #endif
+  #if BOTH(LED_CONTROL_MENU, HAS_COLOR_LEDS)
+    uint32_t LED_Color = Def_Leds_Color;
   #endif
   #if JYENHANCED
     bool cancel_lev = false;       // Cancel leveling
@@ -225,7 +245,9 @@ public:
   static void DWIN_RebootScreen();
   static void RebootPrinter();
   static void Update_Print_Filename(const char * const text);
-
+  #if ENABLED(LED_CONTROL_MENU, HAS_COLOR_LEDS)
+    static void ApplyLEDColor();
+  #endif
   #if JYENHANCED
     static void DWIN_Invert_E0();
   #endif
