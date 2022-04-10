@@ -2448,17 +2448,17 @@ static_assert(COUNT(arm) == LOGICAL_AXES, "AXIS_RELATIVE_MODES must contain " _L
  * FYSETC LCD Requirements
  */
 #if EITHER(FYSETC_242_OLED_12864, FYSETC_MINI_12864_2_1)
-  #ifndef NEO_RGB
-    #define NEO_RGB 123
+  #ifndef NEO_GRB
+    #define NEO_GRB 123
     #define FAUX_RGB 1
   #endif
-  #if defined(NEOPIXEL_TYPE) && NEOPIXEL_TYPE != NEO_RGB
-    #error "Your FYSETC Mini Panel requires NEOPIXEL_TYPE to be NEO_RGB."
+  #if defined(NEOPIXEL_TYPE) && NEOPIXEL_TYPE != NEO_GRB
+    #error "Your FYSETC Mini Panel requires NEOPIXEL_TYPE to be NEO_GRB."
   #elif defined(NEOPIXEL_PIXELS) && NEOPIXEL_PIXELS < 3
     #error "Your FYSETC Mini Panel requires NEOPIXEL_PIXELS >= 3."
   #endif
   #if FAUX_RGB
-    #undef NEO_RGB
+    #undef NEO_GRB
     #undef FAUX_RGB
   #endif
 #elif EITHER(FYSETC_MINI_12864_1_2, FYSETC_MINI_12864_2_0) && !DISABLED(RGB_LED)
