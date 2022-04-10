@@ -2964,10 +2964,8 @@ static_assert(COUNT(arm) == LOGICAL_AXES, "AXIS_RELATIVE_MODES must contain " _L
 #if ENABLED(DWIN_CREALITY_LCD)
   #if DISABLED(SDSUPPORT)
     #error "DWIN_CREALITY_LCD requires SDSUPPORT to be enabled."
-  #elif ENABLED(PID_EDIT_MENU)
-    #error "DWIN_CREALITY_LCD does not support PID_EDIT_MENU."
-  #elif ENABLED(PID_AUTOTUNE_MENU)
-    #error "DWIN_CREALITY_LCD does not support PID_AUTOTUNE_MENU."
+  #elif EITHER(PID_EDIT_MENU, PID_AUTOTUNE_MENU)
+    #error "DWIN_CREALITY_LCD does not support PID_EDIT_MENU or PID_AUTOTUNE_MENU."
   #elif ENABLED(LEVEL_BED_CORNERS)
     #error "DWIN_CREALITY_LCD does not support LEVEL_BED_CORNERS."
   #elif BOTH(LCD_BED_LEVELING, PROBE_MANUALLY)
@@ -2976,10 +2974,8 @@ static_assert(COUNT(arm) == LOGICAL_AXES, "AXIS_RELATIVE_MODES must contain " _L
 #elif ENABLED(DWIN_LCD_PROUI)
   #if DISABLED(SDSUPPORT)
     #error "DWIN_LCD_PROUI requires SDSUPPORT to be enabled."
-  #elif ENABLED(PID_EDIT_MENU)
-    #error "DWIN_LCD_PROUI does not support PID_EDIT_MENU."
-  #elif ENABLED(PID_AUTOTUNE_MENU)
-    #error "DWIN_LCD_PROUI does not support PID_AUTOTUNE_MENU."
+  #elif EITHER(PID_EDIT_MENU, PID_AUTOTUNE_MENU)
+    #error "DWIN_LCD_PROUI does not support PID_EDIT_MENU or PID_AUTOTUNE_MENU."
   #elif ENABLED(LEVEL_BED_CORNERS)
     #error "DWIN_LCD_PROUI does not support LEVEL_BED_CORNERS."
   #elif BOTH(LCD_BED_LEVELING, PROBE_MANUALLY)
