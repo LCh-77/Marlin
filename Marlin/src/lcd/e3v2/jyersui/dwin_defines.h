@@ -30,8 +30,8 @@
  * Date: 2022/02/28
  *
  * Modded for JYERSUI by LCH-77
- * Version: 1.5
- * Date: Feb 20, 2022
+ * Version: 1.7
+ * Date: Apr 18, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
@@ -48,25 +48,25 @@
 #define HAS_LOCKSCREEN 1
 
 // Default UI Colors
-#define Def_Background_Color  Color_Bg_Black
-#define Def_Cursor_color      RGB(20, 49, 31)
-#define Def_TitleBg_color     RGB( 0, 23, 16)
+#define Def_Background_Color  RGB(4,4,0)
+#define Def_Cursor_color      RGB(24,24,0)
+#define Def_TitleBg_color     RGB(12,12,0)
 #define Def_TitleTxt_color    Color_White
 #define Def_Text_Color        Color_White
-#define Def_Selected_Color    Select_Color
-#define Def_SplitLine_Color   RGB( 0, 23, 16)
-#define Def_Highlight_Color   Color_White
-#define Def_StatusBg_Color    RGB( 0, 23, 16)
-#define Def_StatusTxt_Color   Color_Yellow
+#define Def_Selected_Color    RGB(24,24,0)
+#define Def_SplitLine_Color   RGB(24,24,0)
+#define Def_Highlight_Color   RGB(31,40,0)
+#define Def_StatusBg_Color    RGB(12,12,0)
+#define Def_StatusTxt_Color   Color_White
 #define Def_PopupBg_color     Color_Bg_Window
 #define Def_PopupTxt_Color    Popup_Text_Color
 #define Def_AlertBg_Color     Color_Bg_Red
 #define Def_AlertTxt_Color    Color_Yellow
-#define Def_PercentTxt_Color  Percent_Color
-#define Def_Barfill_Color     BarFill_Color
-#define Def_Indicator_Color   Color_White
+#define Def_PercentTxt_Color  RGB(31,48,8)
+#define Def_Barfill_Color     RGB(12,12,0)
+#define Def_Indicator_Color   RGB(31,48,8)
 #define Def_Coordinate_Color  Color_White
-#define Def_Button_Color      RGB( 0, 23, 16)
+#define Def_Button_Color      RGB(12,12,0)
 
 #if ENABLED(LED_CONTROL_MENU, HAS_COLOR_LEDS)
   #define Def_Leds_Color      0xFFFFFFFF
