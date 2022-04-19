@@ -58,7 +58,7 @@ void DWIN_Draw_DegreeSymbol(uint16_t Color, uint16_t x, uint16_t y) {
 //  picID: Icon ID
 //  x/y: Upper-left point
 void DWIN_ICON_Show(uint8_t libID, uint8_t picID, uint16_t x, uint16_t y) {
-  DWIN_ICON_Show(true, false, false, libID, picID, x, y);
+  DWIN_ICON_Show(false, false, true, libID, picID, x, y);
 }
 
 #endif // DWIN_CREALITY_LCD_JYERSUI
