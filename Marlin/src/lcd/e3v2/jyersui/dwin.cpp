@@ -5654,16 +5654,7 @@ void CrealityDWINClass::Reset_Settings() {
 void CrealityDWINClass::PreheatBefore() {
   #if ENABLED(PREHEAT_BEFORE_LEVELING)
     Popup_Handler(Heating);
-    #if HAS_HOTEND
-      if (thermalManager.degTargetHotend(0) < eeprom_settings.hotend_levtemp && (eeprom_settings.ena_hotend_levtemp))
-        thermalManager.setTargetHotend(eeprom_settings.hotend_levtemp, 0);
-    #endif
-    #if HAS_HEATED_BED
-      if (thermalManager.degTargetBed() < eeprom_settings.bed_levtemp && (eeprom_settings.ena_bed_levtemp))
-        thermalManager.setTargetBed(eeprom_settings.bed_levtemp);
-    #endif
-    TERN_(HAS_HOTEND, if (eeprom_settings.ena_hotend_levtemp) thermalManager.wait_for_hotend(0));
-    TERN_(HAS_HEATED_BED, if (eeprom_settings.ena_bed_levtemp) thermalManager.wait_for_bed_heating());
+    probe.preheat_for_probing(eeprom_settings.ena_hotend_levtemp, eeprom_settings.ena_bed_levtemp);
     Update_Status("");
   #endif
 }
