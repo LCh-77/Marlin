@@ -2452,6 +2452,7 @@ static_assert(COUNT(arm) == LOGICAL_AXES, "AXIS_RELATIVE_MODES must contain " _L
 #if EITHER(FYSETC_242_OLED_12864, FYSETC_MINI_12864_2_1)
   #ifndef NEO_RGB
     #define NEO_RGB 123
+    #define FAUX_RGB 1
   #endif
   #if defined(NEOPIXEL_TYPE) && NEOPIXEL_TYPE != NEO_RGB
     #error "Your FYSETC/MKS/BTT Mini Panel requires NEOPIXEL_TYPE to be NEO_RGB."
@@ -2460,6 +2461,7 @@ static_assert(COUNT(arm) == LOGICAL_AXES, "AXIS_RELATIVE_MODES must contain " _L
   #endif
   #if FAUX_RGB
     #undef NEO_RGB
+    #undef FAUX_RGB
   #endif
 #elif EITHER(FYSETC_MINI_12864_1_2, FYSETC_MINI_12864_2_0) && DISABLED(RGB_LED)
   #error "Your FYSETC Mini Panel requires RGB_LED."
