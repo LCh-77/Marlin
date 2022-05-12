@@ -46,6 +46,7 @@
 
 #define HAS_ESDIAG 1
 #define HAS_LOCKSCREEN 1
+#define HAS_HOSTACTION_MENUS 1
 
 // Default UI Colors
 #define Def_Background_Color  RGB(4,4,0)
@@ -123,6 +124,11 @@ typedef struct {
     celsius_t hotend_levtemp = LEVELING_NOZZLE_TEMP;
     celsius_t bed_levtemp = LEVELING_BED_TEMP;
   #endif
+  #if ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS)
+    uint64_t host_action_label_1 : 48;
+    uint64_t host_action_label_2 : 48;
+    uint64_t host_action_label_3 : 48;
+  #endif
   #if JYENHANCED
     bool Invert_E0 = DEF_INVERT_E0_DIR;
     int16_t x_bed_size = DEF_X_BED_SIZE;
@@ -153,7 +159,7 @@ typedef struct {
   #endif
 } eeprom_settings_t;
 
-static constexpr size_t eeprom_data_size = 64;
+static constexpr size_t eeprom_data_size = 96;
 extern eeprom_settings_t eeprom_settings;
 
 #endif // __DWINDEFINES__
