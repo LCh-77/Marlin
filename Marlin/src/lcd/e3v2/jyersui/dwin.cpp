@@ -3341,11 +3341,11 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
           case ADVANCED_BEEPER:
             if (draw) {
               Draw_Menu_Item(row, ICON_Sound, F("LCD Beeper"));
-              Draw_Checkbox(row, ui.buzzer_enabled);
+              Draw_Checkbox(row, ui.sound_on);
             }
             else {
-              ui.buzzer_enabled = !ui.buzzer_enabled;
-              Draw_Checkbox(row, ui.buzzer_enabled);
+              ui.sound_on = !ui.sound_on;
+              Draw_Checkbox(row, ui.sound_on);
             }
             break;
         #endif
@@ -5985,7 +5985,7 @@ void CrealityDWINClass::Screen_Update() {
 }
 
 void CrealityDWINClass::AudioFeedback(const bool success/*=true*/) {
-  if (ui.buzzer_enabled)
+  if (ui.sound_on)
     DONE_BUZZ(success);
   else
     Update_Status(success ? "Success" : "Failed");
@@ -6055,6 +6055,7 @@ void CrealityDWINClass::Reset_Settings() {
   eeprom_settings.coordinates_text = 0;
   eeprom_settings.coordinates_split_line = 0;
   TERN_(AUTO_BED_LEVELING_UBL, mesh_conf.tilt_grid = eeprom_settings.tilt_grid_size + 1);
+<<<<<<< HEAD
   temp_val.corner_pos = eeprom_settings.corner_pos / 10.0f;
   TERN_(SOUND_MENU_ITEM, ui.buzzer_enabled = true);
   TERN_(BAUD_RATE_GCODE, eeprom_settings.Baud115k = false);
@@ -6113,6 +6114,10 @@ void CrealityDWINClass::Reset_Settings() {
       eeprom_settings.fil_fast_load_feedrate = DEF_FILAMENT_CHANGE_FAST_LOAD_FEEDRATE;
     #endif
   #endif
+=======
+  corner_pos = eeprom_settings.corner_pos / 10.0f;
+  TERN_(SOUND_MENU_ITEM, ui.sound_on = ENABLED(SOUND_ON_DEFAULT));
+>>>>>>> 04fe50936e (✨ SOUND_ON_DEFAULT option (#24102))
   Redraw_Screen();
 }
 
