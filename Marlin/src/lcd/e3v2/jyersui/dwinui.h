@@ -84,20 +84,6 @@
   #define ICON_LedControl           ICON_Motion
 #endif
 
-#if JYENHANCED
-  #define ICON_Park                 ICON_Motion
-  #define ICON_ParkPos              ICON_AdvSet
-  #define ICON_ParkPosX             ICON_StepX
-  #define ICON_ParkPosY             ICON_StepY
-  #define ICON_ParkPosZ             ICON_StepZ
-  #define ICON_PhySet               ICON_PrintSize
-  #define ICON_BedSizeX             ICON_PrintSize
-  #define ICON_BedSizeY             ICON_PrintSize
-  #define ICON_MaxPosX              ICON_MoveX
-  #define ICON_MaxPosY              ICON_MoveY
-  #define ICON_MaxPosZ              ICON_MoveZ
-#endif
-
 // Buttons
 #define BTN_Continue          85
 #define BTN_Cancel            87

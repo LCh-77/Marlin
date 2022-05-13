@@ -40,6 +40,7 @@
 
 #define HAS_ESDIAG 1
 #define HAS_LOCKSCREEN 1
+#define HAS_HOSTACTION_MENUS 1
 
 // Default UI Colors
 #define Def_Background_Color  RGB(4,4,0)
@@ -112,6 +113,11 @@ typedef struct {
     bool ena_bed_levtemp : 1;
     celsius_t hotend_levtemp = LEVELING_NOZZLE_TEMP;
     celsius_t bed_levtemp = LEVELING_BED_TEMP;
+  #endif
+  #if ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS)
+    uint64_t host_action_label_1 : 48;
+    uint64_t host_action_label_2 : 48;
+    uint64_t host_action_label_3 : 48;
   #endif
 } eeprom_settings_t;
 

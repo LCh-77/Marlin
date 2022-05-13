@@ -35,7 +35,7 @@
 #include "../../../inc/MarlinConfig.h"
 
 enum processID : uint8_t {
-  Main, Print, Menu, Value, Option, File, Popup, Confirm, Wait, Locked, Cancel
+  Main, Print, Menu, Value, Option, File, Popup, Confirm, Wait, Locked, Cancel, Keyboard
 };
 
 enum PopupID : uint8_t {
@@ -54,6 +54,7 @@ enum menuID : uint8_t {
       ZOffset,
       Preheat,
       ChangeFilament,
+      HostActions,
     Control,
       TempMenu,
         PID,
@@ -67,22 +68,34 @@ enum menuID : uint8_t {
         HomeOffsets,
         MaxSpeed,
         MaxAcceleration,
-        MaxJerk,
-        JDmenu,
+        #if HAS_CLASSIC_JERK
+          MaxJerk,
+        #endif
+        #if HAS_JUNCTION_DEVIATION
+          JDmenu,
+        #endif
         Steps,
-      FwRetraction,
+      #if ENABLED(FWRETRACT)
+        FwRetraction,
+      #endif
       Visual,
         ColorSettings,
+      HostSettings,
+        ActionCommands,
       Advanced,
-        ProbeMenu,
+        #if HAS_BED_PROBE
+          ProbeMenu,
+        #endif
       Info,
-    Leveling,
-      LevelManual,
-      LevelView,
-      MeshViewer,
-      LevelSettings,
-      ManualMesh,
-      UBLMesh,
+    #if HAS_MESH
+      Leveling,
+        LevelManual,
+        LevelView,
+        MeshViewer,
+        LevelSettings,
+        ManualMesh,
+        UBLMesh,
+    #endif
     InfoMain,
   Tune,
   PreheatHotend,
@@ -237,6 +250,17 @@ public:
   #if ENABLED(LED_CONTROL_MENU, HAS_COLOR_LEDS)
     static void ApplyLEDColor();
   #endif
+
+  #if HAS_HOSTACTION_MENUS
+    static void Draw_String(char * string, uint8_t row, bool selected=false, bool below=false);
+    static const uint64_t Encode_String(const char * string);
+    static void Decode_String(uint64_t num, char * string);
+    static void Draw_Keyboard(bool restrict, bool numeric, uint8_t selected=0, bool uppercase=false, bool lock=false);
+    static void Draw_Keys(uint8_t index, bool selected, bool uppercase=false, bool lock=false);
+    static void Modify_String(char * string, uint8_t maxlength, bool restrict);
+    static void Keyboard_Control();
+  #endif
+
 };
 
 extern CrealityDWINClass CrealityDWIN;
