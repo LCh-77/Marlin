@@ -69,14 +69,14 @@ enum menuID : uint8_t {
         MaxSpeed,
         MaxAcceleration,
         #if HAS_CLASSIC_JERK
-        MaxJerk,
+          MaxJerk,
         #endif
         #if HAS_JUNCTION_DEVIATION
-        JDmenu,
+          JDmenu,
         #endif
         Steps,
       #if ENABLED(FWRETRACT)
-      FwRetraction,
+        FwRetraction,
       #endif
       Visual,
         ColorSettings,
@@ -84,17 +84,17 @@ enum menuID : uint8_t {
         ActionCommands,
       Advanced,
         #if HAS_BED_PROBE
-        ProbeMenu,
+          ProbeMenu,
         #endif
       Info,
     #if HAS_MESH
-    Leveling,
-      LevelManual,
-      LevelView,
-      MeshViewer,
-      LevelSettings,
-      ManualMesh,
-      UBLMesh,
+      Leveling,
+        LevelManual,
+        LevelView,
+        MeshViewer,
+        LevelSettings,
+        ManualMesh,
+        UBLMesh,
     #endif
     InfoMain,
   Tune,
