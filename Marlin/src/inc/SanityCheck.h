@@ -2378,8 +2378,6 @@ static_assert(COUNT(arm) == LOGICAL_AXES, "AXIS_RELATIVE_MODES must contain " _L
 #if TEMP_SENSOR_PROBE
   #if !PIN_EXISTS(TEMP_PROBE)
     #error "TEMP_SENSOR_PROBE requires TEMP_PROBE_PIN."
-  #elif !HAS_TEMP_ADC_PROBE
-    #error "TEMP_PROBE_PIN must be an ADC pin."
   #elif DISABLED(FIX_MOUNTED_PROBE)
     #error "TEMP_SENSOR_PROBE shouldn't be set without FIX_MOUNTED_PROBE."
   #endif
@@ -2388,8 +2386,6 @@ static_assert(COUNT(arm) == LOGICAL_AXES, "AXIS_RELATIVE_MODES must contain " _L
 #if TEMP_SENSOR_BOARD
   #if !PIN_EXISTS(TEMP_BOARD)
     #error "TEMP_SENSOR_BOARD requires TEMP_BOARD_PIN."
-  #elif !HAS_TEMP_ADC_BOARD
-    #error "TEMP_BOARD_PIN must be an ADC pin."
   #elif ENABLED(THERMAL_PROTECTION_BOARD) && (!defined(BOARD_MINTEMP) || !defined(BOARD_MAXTEMP))
     #error "THERMAL_PROTECTION_BOARD requires BOARD_MINTEMP and BOARD_MAXTEMP."
   #endif
