@@ -33,7 +33,9 @@
   #include "../../feature/probe_temp_comp.h"
 #endif
 
-#include "../../lcd/marlinui.h"
+#if ENABLED(DWIN_LCD_PROUI, DWIN_CREALITY_LCD_JYERSUI)
+  #include "../../lcd/marlinui.h"
+#endif
 
 /**
  * G30: Do a single Z probe at the current XY
@@ -51,10 +53,9 @@ void GcodeSuite::G30() {
                          parser.linearval('Y', current_position.y + probe.offset_xy.y) };
 
   if (!probe.can_reach(pos)) {
-    #if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
-      PGM_P msg = {"Outside of Probing Area"};
-      SERIAL_ECHOLNPGM_P(msg);
-      ui.set_status(msg);
+    #if ENABLED(DWIN_LCD_PROUI, DWIN_CREALITY_LCD_JYERSUI)
+      SERIAL_ECHOLNF(GET_EN_TEXT_F(MSG_ZPROBE_OUT));
+      LCD_MESSAGE(MSG_ZPROBE_OUT);
     #endif
     return;
   }
@@ -64,7 +65,9 @@ void GcodeSuite::G30() {
 
   remember_feedrate_scaling_off();
 
-  TERN_(DWIN_CREALITY_LCD_JYERSUI, gcode.process_subcommands_now(F("G28O"));)
+  #if ENABLED(DWIN_LCD_PROUI, DWIN_CREALITY_LCD_JYERSUI)
+    process_subcommands_now(F("G28O"));
+  #endif
 
   const ProbePtRaise raise_after = parser.boolval('E', true) ? PROBE_PT_STOW : PROBE_PT_NONE;
 
@@ -73,17 +76,17 @@ void GcodeSuite::G30() {
   TERN_(HAS_PTC, ptc.set_enabled(true));
   if (!isnan(measured_z)) {
     SERIAL_ECHOLNPGM("Bed X: ", pos.x, " Y: ", pos.y, " Z: ", measured_z);
-    #if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
-      char buf[31] = "";
-      char strg_1[6], strg_2[6],strg_3[6] = "";
-      sprintf_P(buf, PSTR("X:%s, Y:%s, Z:%s"), 
-        dtostrf(pos.x, 1, 1, strg_1),
-        dtostrf(pos.y, 1, 1, strg_2),
-        dtostrf(measured_z, 1, 2, strg_3)
+    #if ENABLED(DWIN_LCD_PROUI, DWIN_CREALITY_LCD_JYERSUI)
+      char msg[31], str_1[6], str_2[6], str_3[6];
+      sprintf_P(msg, PSTR("X:%s, Y:%s, Z:%s"),
+        dtostrf(pos.x, 1, 1, str_1),
+        dtostrf(pos.y, 1, 1, str_2),
+        dtostrf(measured_z, 1, 2, str_3)
       );
-      ui.set_status(buf);
+      ui.set_status(msg);
     #endif
   }
+
   restore_feedrate_and_scaling();
 
   if (raise_after == PROBE_PT_STOW)
