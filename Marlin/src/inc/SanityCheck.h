@@ -3039,6 +3039,8 @@ static_assert(COUNT(arm) == LOGICAL_AXES, "AXIS_RELATIVE_MODES must contain " _L
     #error "The ANYCUBIC LCD requires LCD_SERIAL_PORT to be defined."
   #elif ENABLED(MALYAN_LCD)
     #error "MALYAN_LCD requires LCD_SERIAL_PORT to be defined."
+  #elif ENABLED(NEXTION_LCD)
+    #error "NEXTION_LCD requires LCD_SERIAL_PORT to be defined."
   #endif
 #endif
 
