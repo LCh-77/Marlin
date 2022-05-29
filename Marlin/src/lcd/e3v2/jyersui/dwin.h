@@ -26,8 +26,8 @@
  * JYERSUI Author: Jacob Myers
  *
  * JYERSUI Enhanced by LCH-77
- * Version: 1.7
- * Date: Apr 18, 2022
+ * Version: 1.8
+ * Date: May 27, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
@@ -93,8 +93,12 @@ enum menuID : uint8_t {
         LevelView,
         MeshViewer,
         LevelSettings,
-        ManualMesh,
-        UBLMesh,
+        #if ENABLED(PROBE_MANUALLY)
+          ManualMesh,
+        #endif
+        #if ENABLED(AUTO_BED_LEVELING_UBL) && !HAS_BED_PROBE
+          UBLMesh,
+        #endif
     #endif
     InfoMain,
   Tune,
@@ -117,6 +121,7 @@ enum menuID : uint8_t {
   #endif
   #if JYENHANCED
     Parkmenu,
+    MeshInsetMenu,
     PhySetMenu,
   #endif
 };
@@ -153,6 +158,9 @@ typedef struct {
     bool cancel_lev = false;       // Cancel leveling
     #if ENABLED(NOZZLE_PARK_FEATURE)
       int16_t last_pos = 0;
+    #endif
+    #if HAS_MESH
+      float last_meshinset;
     #endif
   #endif
 } temp_val_t;
@@ -285,6 +293,8 @@ public:
   #if JYENHANCED
     static void DWIN_Invert_E0();
     #if HAS_MESH
+      static void MaxMeshArea();
+      static void CenterMeshArea();
       static void ApplyMeshLimits();
     #endif
   #endif

@@ -53,7 +53,7 @@ void DWIN_Draw_DegreeSymbol(uint16_t Color, uint16_t x, uint16_t y) {
 
 /*---------------------------------------- Picture related functions ----------------------------------------*/
 
-// Draw an Icon
+// Draw an Icon with transparent background
 //  libID: Icon library ID
 //  picID: Icon ID
 //  x/y: Upper-left point
