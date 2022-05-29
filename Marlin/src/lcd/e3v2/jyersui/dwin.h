@@ -26,8 +26,8 @@
  * JYERSUI Author: Jacob Myers
  *
  * JYERSUI Enhanced by LCH-77
- * Version: 1.7
- * Date: Apr 18, 2022
+ * Version: 1.8
+ * Date: May 27, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
@@ -93,8 +93,12 @@ enum menuID : uint8_t {
         LevelView,
         MeshViewer,
         LevelSettings,
-        ManualMesh,
-        UBLMesh,
+        #if ENABLED(PROBE_MANUALLY)
+          ManualMesh,
+        #endif
+        #if ENABLED(AUTO_BED_LEVELING_UBL) && !HAS_BED_PROBE
+          UBLMesh,
+        #endif
     #endif
     InfoMain,
   Tune,

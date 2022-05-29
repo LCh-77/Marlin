@@ -69,7 +69,7 @@ void draw_es_state(const bool is_hit) {
 void ESDiagClass::Draw() {
   CrealityDWINClass::Clear_Screen(1);
   CrealityDWINClass::Draw_Title(F("End-stops Diagnostic"));
-  DWINUI::ClearMenuArea();
+  DWINUI::ClearMainArea();
   DWIN_Draw_Rectangle(0, Color_White, 14, 60, 258, 330);
   DWINUI::Draw_Button(BTN_Continue, 86, 250);
   DWINUI::cursor.y = 80;
