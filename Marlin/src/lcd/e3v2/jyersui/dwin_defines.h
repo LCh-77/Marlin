@@ -30,8 +30,8 @@
  * Date: 2022/02/28
  *
  * Modded for JYERSUI by LCH-77
- * Version: 1.7
- * Date: Apr 18, 2022
+ * Version: 1.8
+ * Date: May 28, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
@@ -176,11 +176,11 @@ extern eeprom_settings_t eeprom_settings;
   #undef Y_MAX_POS
   #undef Z_MAX_POS
 
-    #if HAS_BED_PROBE
+  #if HAS_BED_PROBE
     #undef PROBING_MARGIN
     #undef Z_PROBE_FEEDRATE_FAST
     #undef Z_PROBE_FEEDRATE_SLOW
-    #endif
+  #endif
 
   #if HAS_MESH
     #undef MESH_MIN_X

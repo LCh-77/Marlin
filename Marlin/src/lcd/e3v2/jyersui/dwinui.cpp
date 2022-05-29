@@ -23,11 +23,12 @@
 /**
  * DWIN Enhanced implementation for PRO UI
  * Author: Miguel A. Risco-Castillo (MRISCOC)
- * Version: 3.15.1
- * Date: 2022/02/25
+ * Version: 3.17.1
+ * Date: 2022/04/12
  *
  * Modded for JYERSUI by LCH-77
- * Date: 2022/03/15
+ * Version: 1.8
+ * Date: May 28, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
@@ -51,10 +52,12 @@ uint8_t  DWINUI::font = font8x16;
 FSTR_P const DWINUI::Author = F(STRING_CONFIG_H_AUTHOR);
 
 void DWINUI::init() {
-  TERN_(DEBUG_DWIN, SERIAL_ECHOPGM("\r\nDWIN handshake "));
   delay(750);   // Delay for wait to wakeup screen
-  const bool hs = DWIN_Handshake();
-  TERN(DEBUG_DWIN, SERIAL_ECHOLNF(hs ? F("ok.") : F("error.")), UNUSED(hs));
+  const bool hs = DWIN_Handshake(); UNUSED(hs);
+  #if ENABLED(DEBUG_DWIN)
+    SERIAL_ECHOPGM("DWIN_Handshake ");
+    SERIAL_ECHOLNF(hs ? F("ok.") : F("error."));
+  #endif
   DWIN_Frame_SetDir(1);
   cursor.reset();
   pencolor = Color_White;
@@ -156,10 +159,19 @@ void DWINUI::Draw_CenteredString(bool bShow, uint8_t size, uint16_t color, uint1
   DWIN_Draw_String(bShow, size, color, bColor, x, y, string);
 }
 
-// Draw a char at cursor position
-void DWINUI::Draw_Char(uint16_t color, const char c) {
+// Draw a char
+//  color: Character color
+//  x: abscissa of the display
+//  y: ordinate of the display
+//  c: ASCII code of char
+void DWINUI::Draw_Char(uint16_t color, uint16_t x, uint16_t y, const char c) {
   const char string[2] = { c, 0};
-  DWIN_Draw_String(false, font, color, backcolor, cursor.x, cursor.y, string, 1);
+  DWIN_Draw_String(false, font, color, backcolor, x, y, string, 1);
+}
+
+// Draw a char at cursor position and increment cursor
+void DWINUI::Draw_Char(uint16_t color, const char c) {
+  Draw_Char(color, cursor.x, cursor.y, c);
   MoveBy(fontWidth(font), 0);
 }
 
@@ -176,6 +188,36 @@ void DWINUI::Draw_String(uint16_t color, const char * const string, uint16_t rli
   MoveBy(strlen(string) * fontWidth(font), 0);
 }
 
+// Draw a numeric integer value
+//  bShow: true=display background color; false=don't display background color
+//  signedMode: 1=signed; 0=unsigned
+//  size: Font size
+//  color: Character color
+//  bColor: Background color
+//  iNum: Number of digits
+//  x/y: Upper-left coordinate
+//  value: Integer value
+void DWINUI::Draw_Int(uint8_t bShow, bool signedMode, uint8_t size, uint16_t color, uint16_t bColor, uint8_t iNum, uint16_t x, uint16_t y, int32_t value) {
+  char nstr[10];
+  sprintf_P(nstr, PSTR("%*li"), (signedMode ? iNum + 1 : iNum), value);
+  DWIN_Draw_String(bShow, size, color, bColor, x, y, nstr);
+}
+
+// Draw a numeric float value
+//  bShow: true=display background color; false=don't display background color
+//  signedMode: 1=signed; 0=unsigned
+//  size: Font size
+//  color: Character color
+//  bColor: Background color
+//  iNum: Number of digits
+//  fNum: Number of decimal digits
+//  x/y: Upper-left coordinate
+//  value: float value
+void DWINUI::Draw_Float(uint8_t bShow, bool signedMode, uint8_t size, uint16_t color, uint16_t bColor, uint8_t iNum, uint8_t fNum, uint16_t x, uint16_t y, float value) {
+  char nstr[10];
+  DWIN_Draw_String(bShow, size, color, bColor, x, y, dtostrf(value, iNum + (signedMode ? 2:1) + fNum, fNum, nstr));
+}
+
 // ------------------------- Buttons ------------------------------//
 
 void DWINUI::Draw_Button(uint16_t color, uint16_t bcolor, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, const char * const caption) {
@@ -190,6 +232,7 @@ void DWINUI::Draw_Button(uint8_t id, uint16_t x, uint16_t y) {
     case BTN_Continue: Draw_Button(GET_TEXT_F(MSG_BUTTON_CONTINUE), x, y); break;
     case BTN_Print   : Draw_Button(GET_TEXT_F(MSG_BUTTON_PRINT), x, y); break;
     case BTN_Save    : Draw_Button(GET_TEXT_F(MSG_BUTTON_SAVE), x, y); break;
+    case BTN_Purge   : Draw_Button(GET_TEXT_F(MSG_BUTTON_PURGE), x, y); break;
     default: break;
   }
 }
@@ -251,7 +294,7 @@ uint16_t DWINUI::ColorInt(int16_t val, int16_t minv, int16_t maxv, uint16_t colo
   return RGB(R, G, B);
 }
 
-// Color Interpolator through Red->Yellow->Green->Blue
+// Color Interpolator through Red->Yellow->Green->Blue (Pro UI)
 //  val : Interpolator minv..maxv
 //  minv : Minimum value
 //  maxv : Maximum value
@@ -290,7 +333,7 @@ void DWINUI::Draw_Checkbox(uint16_t color, uint16_t bcolor, uint16_t x, uint16_t
 }
 
 // Clear Menu by filling the menu area with background color
-void DWINUI::ClearMenuArea() {
+void DWINUI::ClearMainArea() {
   DWIN_Draw_Rectangle(1, backcolor, 0, TITLE_HEIGHT, DWIN_WIDTH - 1, STATUS_Y - 1);
 }
 

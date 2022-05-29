@@ -117,8 +117,11 @@ public:
     static void set_store_from_mesh(const bed_mesh_t &in_values, mesh_store_t &stored_values);
     static void set_mesh_from_store(const mesh_store_t &stored_values, bed_mesh_t &out_values);
   #endif
-  static const float _mesh_index_to_xpos[GRID_MAX_POINTS_X],
-                     _mesh_index_to_ypos[GRID_MAX_POINTS_Y];
+ 
+  #if DISABLED(JYENHANCED)
+    static const float _mesh_index_to_xpos[GRID_MAX_POINTS_X],
+                      _mesh_index_to_ypos[GRID_MAX_POINTS_Y];
+  #endif
 
   #if HAS_MARLINUI_MENU
     static bool lcd_map_control;

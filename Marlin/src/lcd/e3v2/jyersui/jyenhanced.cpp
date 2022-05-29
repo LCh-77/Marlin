@@ -2,7 +2,7 @@
  * JYERSUI Enhanced
  * Author: LCH-77
  * Version: 1.2
- * Date: 2022/02/06
+ * Date: 2022/05/28
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -30,6 +30,11 @@
   #include "../../../module/probe.h"
 #endif
 
+#if ENABLED(AUTO_BED_LEVELING_BILINEAR)
+  #include "../../../feature/bedlevel/bedlevel.h"
+  #include "../../../feature/bedlevel/abl/abl.h"
+#endif
+
 #if ENABLED(AUTO_BED_LEVELING_UBL)
   #include "../../../feature/bedlevel/bedlevel.h"
   #include "../../../feature/bedlevel/ubl/ubl.h"
@@ -51,10 +56,10 @@
 #endif
 
 #if ENABLED(AUTO_BED_LEVELING_UBL)
-  float unified_bed_leveling::mesh_index_to_xpos(const uint8_t i) {
+  float unified_bed_leveling::get_mesh_x(const uint8_t i) {
       return (eeprom_settings.mesh_min_x) + i * (float(eeprom_settings.mesh_max_x - (eeprom_settings.mesh_min_x)) / GRID_MAX_CELLS_X);
   }
-  float unified_bed_leveling::mesh_index_to_ypos(const uint8_t i) {
+  float unified_bed_leveling::get_mesh_y(const uint8_t i) {
       return (eeprom_settings.mesh_min_y) + i * (float(eeprom_settings.mesh_max_y - (eeprom_settings.mesh_min_y)) / GRID_MAX_CELLS_Y);
   }
 #endif

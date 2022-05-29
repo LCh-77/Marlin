@@ -22,10 +22,10 @@
 #pragma once
 
 /**
- * Lock screen implementation for DWIN UI Enhanced implementation
- * Author: Miguel A. Risco-Castillo
- * Version: 2.1
- * Date: 2021/11/09
+ * Lock screen implementation for PRO UI
+ * Author: Miguel A. Risco-Castillo (MRISCOC)
+ * Version: 2.2.0
+ * Date: 2022/04/11
  *
  * Modded for JYERSUI by LCH-77
  */
@@ -33,7 +33,6 @@
 #include "../../../core/types.h"
 #include "../common/encoder.h"
 #include <stdint.h>
-
 
 class LockScreenClass {
 private:
