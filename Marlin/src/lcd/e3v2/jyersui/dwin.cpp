@@ -2539,7 +2539,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
           break;
         case MOTION_SPEED:
           if (draw)
-            Draw_Menu_Item(row, ICON_MaxSpeed, GET_TEXT_F(MSG_MAXSPEED), nullptr, true);
+            Draw_Menu_Item(row, ICON_MaxSpeed, GET_TEXT_F(MSG_MAX_SPEED), nullptr, true);
           else
             Draw_Menu(MaxSpeed);
           break;
@@ -2785,7 +2785,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
           break;
         case SPEED_X:
           if (draw) {
-            Draw_Menu_Item(row, ICON_MaxSpeedX, GET_TEXT_F(MSG_MAXSPEED_X));
+            Draw_Menu_Item(row, ICON_MaxSpeedX, GET_TEXT_F(MSG_VMAX_A));
             Draw_Float(planner.settings.max_feedrate_mm_s[X_AXIS], row, false, 1);
           }
           else
@@ -2795,7 +2795,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         #if HAS_Y_AXIS
           case SPEED_Y:
             if (draw) {
-              Draw_Menu_Item(row, ICON_MaxSpeedY, GET_TEXT_F(MSG_MAXSPEED_Y));
+              Draw_Menu_Item(row, ICON_MaxSpeedY, GET_TEXT_F(MSG_VMAX_B));
               Draw_Float(planner.settings.max_feedrate_mm_s[Y_AXIS], row, false, 1);
             }
             else
@@ -2806,7 +2806,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         #if HAS_Z_AXIS
           case SPEED_Z:
             if (draw) {
-              Draw_Menu_Item(row, ICON_MaxSpeedZ, GET_TEXT_F(MSG_MAXSPEED_Z));
+              Draw_Menu_Item(row, ICON_MaxSpeedZ, GET_TEXT_F(MSG_VMAX_C));
               Draw_Float(planner.settings.max_feedrate_mm_s[Z_AXIS], row, false, 1);
             }
             else
@@ -2817,7 +2817,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
         #if HAS_HOTEND
           case SPEED_E:
             if (draw) {
-              Draw_Menu_Item(row, ICON_MaxSpeedE, GET_TEXT_F(MSG_MAXSPEED_E));
+              Draw_Menu_Item(row, ICON_MaxSpeedE, GET_TEXT_F(MSG_VMAX_E));
               Draw_Float(planner.settings.max_feedrate_mm_s[E_AXIS], row, false, 1);
             }
             else
