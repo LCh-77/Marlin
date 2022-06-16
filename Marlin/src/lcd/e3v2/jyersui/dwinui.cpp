@@ -27,8 +27,8 @@
  * Date: 2022/04/12
  *
  * Modded for JYERSUI by LCH-77
- * Version: 1.8
- * Date: May 28, 2022
+ * Version: 1.9
+ * Date: Jun 16, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"

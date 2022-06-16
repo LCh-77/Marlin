@@ -26,8 +26,8 @@
  * JYERSUI Author: Jacob Myers
  *
  * JYERSUI Enhanced by LCH-77
- * Version: 1.8
- * Date: May 27, 2022
+ * Version: 1.9
+ * Date: Jun 16, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
@@ -40,9 +40,9 @@ enum processID : uint8_t {
 
 enum PopupID : uint8_t {
   Pause, Stop, Resume, SaveLevel, ETemp, ConfFilChange, PurgeMore, MeshSlot,
-  Level, Home, MoveWait, Heating,  FilLoad, FilChange, TempWarn, Runout, PIDWait, Resuming, ManualProbing,
-  FilInsert, HeaterTime, UserInput, LevelError, InvalidMesh, UI, Complete, Custom,
-  ESDiagPopup
+  Level, Home, MoveWait, Heating,  FilLoad, FilChange, TempWarn, Runout, Resuming, ManualProbing,
+  FilInsert, HeaterTime, UserInput, LevelError, InvalidMesh, UI, Complete, Custom, ESDiagPopup, PrintConfirm,
+  PIDWait, PIDWaitH, PIDWaitB, BadextruderNumber, TempTooHigh, PIDTimeout, PIDDone
 };
 
 enum menuID : uint8_t {
@@ -155,6 +155,10 @@ typedef struct {
   #if BOTH(LED_CONTROL_MENU, HAS_COLOR_LEDS)
     uint32_t LED_Color = Def_Leds_Color;
   #endif
+  #if HAS_PID_HEATING
+    uint16_t PID_e_temp = 180;
+    uint16_t PID_bed_temp = 60;
+  #endif
   #if JYENHANCED
     bool cancel_lev = false;       // Cancel leveling
     #if ENABLED(NOZZLE_PARK_FEATURE)
@@ -171,6 +175,7 @@ extern temp_val_t temp_val;
 enum colorID : uint8_t {
   Default, White, Green, Cyan, Blue, Magenta, Red, Orange, Yellow, Brown, Black
 };
+enum pidresult_t : uint8_t { PID_STARTED, PID_EXTR_START, PID_BED_START, PID_BAD_EXTRUDER_NUM, PID_TEMP_TOO_HIGH, PID_TUNING_TIMEOUT, PID_DONE };
 
 class CrealityDWINClass {
 public:
@@ -204,7 +209,7 @@ public:
     static void Draw_Print_ProgressRemain();
   #endif
   static void Draw_Print_ProgressElapsed();
-  static void Draw_Print_confirm();
+  static void Draw_PrintDone_confirm();
   static void Draw_SD_Item(uint8_t item, uint8_t row);
   static void Draw_SD_List(bool removed=false);
   static void Draw_Status_Area(bool icons=false);
@@ -278,6 +283,14 @@ public:
     static void Draw_Keys(uint8_t index, bool selected, bool uppercase=false, bool lock=false);
     static void Modify_String(char * string, uint8_t maxlength, bool restrict);
     static void Keyboard_Control();
+  #endif
+
+  #if HAS_PIDPLOT
+    static void DWIN_Draw_PIDPopup(const pidresult_t pidresult);
+  #endif
+
+  #if HAS_PID_HEATING
+    static void DWIN_PidTuning(const pidresult_t pidresult);
   #endif
 
   void DWIN_CError();

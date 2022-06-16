@@ -206,10 +206,10 @@ public:
      * far enough past the right edge).
      */
     #if JYENHANCED
-      static float _min_x(const xy_pos_t &probe_offset_xy = offset_xy);
-      static float _max_x(const xy_pos_t &probe_offset_xy = offset_xy);
-      static float _min_y(const xy_pos_t &probe_offset_xy = offset_xy);
-      static float _max_y(const xy_pos_t &probe_offset_xy = offset_xy);
+      static float _min_x(const xy_pos_t &probe_offset_xy = TERN(HAS_BED_PROBE,offset_xy,{0}));
+      static float _max_x(const xy_pos_t &probe_offset_xy = TERN(HAS_BED_PROBE,offset_xy,{0}));
+      static float _min_y(const xy_pos_t &probe_offset_xy = TERN(HAS_BED_PROBE,offset_xy,{0}));
+      static float _max_y(const xy_pos_t &probe_offset_xy = TERN(HAS_BED_PROBE,offset_xy,{0}));
     #else
       static constexpr float _min_x(const xy_pos_t &probe_offset_xy=offset_xy) {
         return TERN(IS_KINEMATIC,
