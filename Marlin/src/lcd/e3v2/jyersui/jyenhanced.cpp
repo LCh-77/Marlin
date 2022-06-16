@@ -21,18 +21,15 @@
  */
 #include "../../../inc/MarlinConfigPre.h"
 
-#if JYENHANCED && ENABLED(DWIN_CREALITY_LCD_JYERSUI)
+#if BOTH(JYENHANCED, DWIN_CREALITY_LCD_JYERSUI)
 
 #include "dwin.h"
 #include "../../../gcode/gcode.h"
-
-#if HAS_BED_PROBE
-  #include "../../../module/probe.h"
-#endif
+#include "../../../module/probe.h"
 
 #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
   #include "../../../feature/bedlevel/bedlevel.h"
-  #include "../../../feature/bedlevel/abl/abl.h"
+  #include "../../../feature/bedlevel/abl/bbl.h"
 #endif
 
 #if ENABLED(AUTO_BED_LEVELING_UBL)
@@ -40,7 +37,9 @@
   #include "../../../feature/bedlevel/ubl/ubl.h"
 #endif
 
-#if HAS_BED_PROBE
+#include "../../../module/motion.h"
+
+#if HAS_LEVELING
   float Probe::_min_x(const xy_pos_t &probe_offset_xy) {
     return _MAX((X_MIN_BED) + (eeprom_settings.mesh_min_x), (X_MIN_POS) + probe_offset_xy.x);
   }

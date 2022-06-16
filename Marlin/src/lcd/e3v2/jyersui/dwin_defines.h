@@ -30,23 +30,23 @@
  * Date: 2022/02/28
  *
  * Modded for JYERSUI by LCH-77
- * Version: 1.8
- * Date: May 28, 2022
+ * Version: 1.9
+ * Date: Jun 16, 2022
  */
 
 #include "../../../inc/MarlinConfigPre.h"
 
 #define JYENHANCED 1 // Enable LCH-77 JYersUI Enhancements
-
+#define HAS_ESDIAG 1
+#define HAS_LOCKSCREEN 1
+#define HAS_HOSTACTION_MENUS 1
+#define HAS_PIDPLOT 1
+#define HAS_GCODE_PREVIEW 1
 //#define DEBUG_DWIN 1
 //#define NEED_HEX_PRINT 1
 
 #include "../../../core/types.h"
 #include "../common/dwin_color.h"
-
-#define HAS_ESDIAG 1
-#define HAS_LOCKSCREEN 1
-#define HAS_HOSTACTION_MENUS 1
 
 // Default UI Colors
 #define Def_Background_Color  RGB(4,4,0)
