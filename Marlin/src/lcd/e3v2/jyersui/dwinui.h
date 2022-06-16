@@ -28,8 +28,8 @@
  * Date: 2022/04/12
  *
  * Modded for JYERSUI by LCH-77
- * Version: 1.8
- * Date: May 28, 2022
+ * Version: 1.9
+ * Date: Jun 16, 2022
  */
 
 #include "dwin_lcd.h"
@@ -87,6 +87,7 @@
   #define ICON_CaseLight            ICON_Motion
   #define ICON_LedControl           ICON_Motion
   #define ICON_MeshActive           ICON_HotendTemp
+  #define ICON_Park                 ICON_Motion
 #endif
 
 // Buttons
@@ -502,6 +503,22 @@ namespace DWINUI {
   //  minv : Minimum value
   //  maxv : Maximum value
   uint16_t RainbowInt(int16_t val, int16_t minv, int16_t maxv);
+
+  // Write buffer data to the SRAM
+  //  addr: SRAM start address 0x0000-0x7FFF
+  //  length: Bytes to write
+  //  data: address of the buffer with data
+  inline void WriteToSRAM(uint16_t addr, uint16_t length, uint8_t *data) {
+    DWIN_WriteToMem(0x5A, addr, length, data);
+  }
+
+  // Write buffer data to the Flash
+  //  addr: Flash start address 0x0000-0x3FFF
+  //  length: Bytes to write
+  //  data: address of the buffer with data
+  inline void WriteToFlash(uint16_t addr, uint16_t length, uint8_t *data) {
+    DWIN_WriteToMem(0xA5, addr, length, data);
+  }
 
   // Clear by filling the area with background color
   // Area (0, TITLE_HEIGHT, DWIN_WIDTH, STATUS_Y - 1)
