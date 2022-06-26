@@ -312,7 +312,7 @@ CrealityDWINClass CrealityDWIN;
 
     #endif
 
-    void manual_move(bool zmove=false) {
+    void manual_mesh_move(const bool zmove=false) {
       if (zmove) {
         planner.synchronize();
         current_position.z = goto_mesh_value ? bedlevel.z_values[mesh_x][mesh_y] : Z_CLEARANCE_BETWEEN_PROBES;
@@ -3840,7 +3840,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
                   mesh_conf.goto_mesh_value = true;
                   mesh_conf.mesh_x = mesh_conf.mesh_y = 0;
                   Popup_Handler(MoveWait);
-                  mesh_conf.manual_move();
+                  mesh_conf.manual_mesh_move();
                   Draw_Menu(UBLMesh);
                 #endif
               #elif HAS_BED_PROBE
@@ -3885,7 +3885,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
               set_bed_leveling_enabled(false);
               mesh_conf.goto_mesh_value = false;
               Popup_Handler(MoveWait);
-              mesh_conf.manual_move();
+              mesh_conf.manual_mesh_move();
               gcode.process_subcommands_now(F("M211 S0"));
               Draw_Menu(LevelManual);
             }
@@ -4151,7 +4151,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
                   mesh_conf.mesh_x++;
                 else
                   mesh_conf.mesh_x--;
-                mesh_conf.manual_move();
+                mesh_conf.manual_mesh_move();
               }
             }
             break;
@@ -4198,7 +4198,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
             else {
               mesh_conf.goto_mesh_value = !mesh_conf.goto_mesh_value;
               current_position.z = 0;
-              mesh_conf.manual_move(true);
+              mesh_conf.manual_mesh_move(true);
               Draw_Checkbox(row, mesh_conf.goto_mesh_value);
             }
             break;
@@ -4251,7 +4251,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
                   mesh_conf.mesh_x++;
                 else
                   mesh_conf.mesh_x--;
-                mesh_conf.manual_move();
+                mesh_conf.manual_mesh_move();
               }
               else {
                 gcode.process_subcommands_now(F("G29 S"));
@@ -4272,7 +4272,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
                   mesh_conf.mesh_x--;
                 else
                   mesh_conf.mesh_x++;
-                mesh_conf.manual_move();
+                mesh_conf.manual_mesh_move();
               }
             }
             break;
@@ -5063,9 +5063,9 @@ void CrealityDWINClass::Value_Control() {
             break;
         #endif
         #if ENABLED(AUTO_BED_LEVELING_UBL) && !HAS_BED_PROBE
-          case UBLMesh:     mesh_conf.manual_move(true); break;
+          case UBLMesh: mesh_conf.manual_mesh_move(true); break;
         #endif
-        case LevelManual: mesh_conf.manual_move(selection == LEVELING_M_OFFSET); break;
+        case LevelManual: mesh_conf.manual_mesh_move(selection == LEVELING_M_OFFSET); break;
       #endif
     }
     if (valuepointer == &planner.flow_percentage[0])
