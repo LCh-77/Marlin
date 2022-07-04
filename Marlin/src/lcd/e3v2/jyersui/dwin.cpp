@@ -1394,7 +1394,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
                 if (thermalManager.temp_hotend[0].target < thermalManager.extrude_min_temp)
                   Popup_Handler(ETemp);
                 else {
-                  if (thermalManager.temp_hotend[0].celsius < thermalManager.temp_hotend[0].target - 2) {
+                  if (thermalManager.temp_hotend[0].is_below_target(-2)) {
                     Popup_Handler(Heating);
                     thermalManager.wait_for_hotend(0);
                   }
@@ -1537,7 +1537,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
                 Popup_Handler(ETemp);
               }
               else {
-                if (thermalManager.temp_hotend[0].celsius < thermalManager.temp_hotend[0].target - 2) {
+                if (thermalManager.temp_hotend[0].is_below_target(-2)) {
                   Popup_Handler(Heating);
                   thermalManager.wait_for_hotend(0);
                   Redraw_Menu();
@@ -1944,7 +1944,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
               if (thermalManager.temp_hotend[0].target < thermalManager.extrude_min_temp)
                 Popup_Handler(ETemp);
               else {
-                if (thermalManager.temp_hotend[0].celsius < thermalManager.temp_hotend[0].target - 2) {
+                if (thermalManager.temp_hotend[0].is_below_target(-2)) {
                   Popup_Handler(Heating);
                   thermalManager.wait_for_hotend(0);
                 }
@@ -1963,7 +1963,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
                 Popup_Handler(ETemp);
               }
               else {
-                if (thermalManager.temp_hotend[0].celsius < thermalManager.temp_hotend[0].target - 2) {
+                if (thermalManager.temp_hotend[0].is_below_target(-2)) {
                   Popup_Handler(Heating);
                   thermalManager.wait_for_hotend(0);
                 }
@@ -1981,7 +1981,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
               if (thermalManager.temp_hotend[0].target < thermalManager.extrude_min_temp)
                 Popup_Handler(ETemp);
               else {
-                if (thermalManager.temp_hotend[0].celsius < thermalManager.temp_hotend[0].target - 2) {
+                if (thermalManager.temp_hotend[0].is_below_target(-2)) {
                   Popup_Handler(Heating);
                   thermalManager.wait_for_hotend(0);
                 }
@@ -2533,7 +2533,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define MOTION_JERK (MOTION_ACCEL + ENABLED(HAS_CLASSIC_JERK))
       #define MOTION_JD (MOTION_JERK + ENABLED(HAS_JUNCTION_DEVIATION))
       #define MOTION_STEPS (MOTION_JD + 1)
-      #define MOTION_INVERT_E0 (MOTION_STEPS + (ENABLED(HAS_HOTEND, JYENHANCED)))
+      #define MOTION_INVERT_E0 (MOTION_STEPS + ENABLED(HAS_HOTEND, JYENHANCED))
       #define MOTION_FLOW (MOTION_INVERT_E0 + ENABLED(HAS_HOTEND))
       #define MOTION_TOTAL MOTION_FLOW
 
@@ -5408,7 +5408,7 @@ void CrealityDWINClass::Value_Control() {
             break;
         #endif
         #if ENABLED(AUTO_BED_LEVELING_UBL) && !HAS_BED_PROBE
-          case UBLMesh:     mesh_conf.manual_mesh_move(true); break;
+          case UBLMesh: mesh_conf.manual_mesh_move(true); break;
         #endif
         case LevelManual: mesh_conf.manual_mesh_move(selection == LEVELING_M_OFFSET); break;
         #if JYENHANCED
@@ -5811,7 +5811,7 @@ void CrealityDWINClass::Popup_Control() {
             if (thermalManager.temp_hotend[0].target < thermalManager.extrude_min_temp)
               Popup_Handler(ETemp);
             else {
-              if (thermalManager.temp_hotend[0].celsius < thermalManager.temp_hotend[0].target - 2) {
+              if (thermalManager.temp_hotend[0].is_below_target(-2)) {
                 Popup_Handler(Heating);
                 thermalManager.wait_for_hotend(0);
               }
