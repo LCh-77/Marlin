@@ -39,13 +39,13 @@
 
 #include "../../marlinui.h"
 #include "../../../MarlinCore.h"
-
 #include "../../../gcode/gcode.h"
 #include "../../../module/temperature.h"
 #include "../../../module/planner.h"
 #include "../../../module/settings.h"
 #include "../../../libs/buzzer.h"
 #include "../../../inc/Conditionals_post.h"
+#include "../common/encoder.h"
 
 //#define DEBUG_OUT 1
 #include "../../../core/debug_out.h"
@@ -470,7 +470,7 @@ void CrealityDWINClass::Draw_Option(uint8_t value, const char * const * options,
   DWIN_Draw_String(false, DWIN_FONT_MENU, tColor, bColor, 202, MBASE(row) - 1, options[value]);
 }
 
-#if HAS_HOSTACTION_MENUS
+#if ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS)
   void CrealityDWINClass::Draw_String(char * string, uint8_t row, bool selected/*=false*/, bool below/*=false*/) {
     if (!string) string[0] = '\0';
     const uint8_t offset_x = DWIN_WIDTH-strlen(string)*8 - 20;
@@ -1094,7 +1094,7 @@ void CrealityDWINClass::Update_Status_Bar(bool refresh/*=false*/) {
   }
 }
 
-#if HAS_HOSTACTION_MENUS
+#if ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS)
   void CrealityDWINClass::Draw_Keyboard(bool restrict, bool numeric, uint8_t selected, bool uppercase/*=false*/, bool lock/*=false*/) {
     process = Keyboard;
     keyboard_restrict = restrict;
@@ -1278,7 +1278,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define PREPARE_PREHEAT (PREPARE_ZOFFSET + ENABLED(HAS_PREHEAT))
       #define PREPARE_COOLDOWN (PREPARE_PREHEAT + EITHER(HAS_HOTEND, HAS_HEATED_BED))
       #define PREPARE_CHANGEFIL (PREPARE_COOLDOWN + ENABLED(ADVANCED_PAUSE_FEATURE))
-      #define PREPARE_ACTIONCOMMANDS (PREPARE_CHANGEFIL + (ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS)))
+      #define PREPARE_ACTIONCOMMANDS (PREPARE_CHANGEFIL + ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS))
       #define PREPARE_CUSTOM_MENU (PREPARE_ACTIONCOMMANDS + ENABLED(HAS_CUSTOM_MENU))
       #define PREPARE_TOTAL PREPARE_ACTIONCOMMANDS
 
@@ -2162,7 +2162,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define CONTROL_PARKMENU (CONTROL_FWRETRACT + ENABLED(NOZZLE_PARK_FEATURE, JYENHANCED))
       #define CONTROL_LEDS (CONTROL_PARKMENU + ANY(CASE_LIGHT_MENU, LED_CONTROL_MENU))
       #define CONTROL_VISUAL (CONTROL_LEDS + 1)
-      #define CONTROL_HOSTSETTINGS (CONTROL_VISUAL + (ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS)))
+      #define CONTROL_HOSTSETTINGS (CONTROL_VISUAL + ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS))
       #define CONTROL_ADVANCED (CONTROL_HOSTSETTINGS + 1)
       #define CONTROL_SAVE (CONTROL_ADVANCED + ENABLED(EEPROM_SETTINGS))
       #define CONTROL_RESTORE (CONTROL_SAVE + ENABLED(EEPROM_SETTINGS))
@@ -4755,7 +4755,7 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
       #define TUNE_ZUP (TUNE_ZOFFSET + ENABLED(HAS_ZOFFSET_ITEM))
       #define TUNE_ZDOWN (TUNE_ZUP + ENABLED(HAS_ZOFFSET_ITEM))
       #define TUNE_FWRETRACT (TUNE_ZDOWN + ENABLED(FWRETRACT))
-      #define TUNE_HOSTACTIONS (TUNE_FWRETRACT + (ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS)))
+      #define TUNE_HOSTACTIONS (TUNE_FWRETRACT + ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS))
       #define TUNE_CHANGEFIL (TUNE_HOSTACTIONS + ENABLED(FILAMENT_LOAD_UNLOAD_GCODES))
       #define TUNE_FILSENSORENABLED (TUNE_CHANGEFIL + ENABLED(FILAMENT_RUNOUT_SENSOR))
       #define TUNE_BACKLIGHT_OFF (TUNE_FILSENSORENABLED + 1)
@@ -5912,7 +5912,7 @@ void CrealityDWINClass::Confirm_Control() {
   DWIN_UpdateLCD();
 }
 
-#if HAS_HOSTACTION_MENUS
+#if ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS)
   void CrealityDWINClass::Keyboard_Control() {
     const uint8_t keyboard_size = 34;
     static uint8_t key_selection = 0, cursor = 0;
@@ -6090,7 +6090,7 @@ void CrealityDWINClass::Modify_Option(uint8_t value, const char * const * option
   Draw_Option(value, options, selection - scrollpos, true);
 }
 
-#if HAS_HOSTACTION_MENUS
+#if ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS)
   void CrealityDWINClass::Modify_String(char * string, uint8_t maxlength, bool restrict) {
     stringpointer = string;
     maxstringlen = maxlength;
@@ -6160,7 +6160,7 @@ void CrealityDWINClass::Update() {
     case Print:   Print_Screen_Control(); break;
     case Popup:   Popup_Control();        break;
     case Confirm: Confirm_Control();      break;
-    #if HAS_HOSTACTION_MENUS
+    #if ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS)
       case Keyboard: Keyboard_Control();  break;
     #endif
     case Cancel:  Confirm_Control();      break;
@@ -6652,10 +6652,12 @@ void  CrealityDWINClass::DWIN_C108() {
 }
 
 // lock/unlock screen
-void CrealityDWINClass:: DWIN_C510() {
-  if (parser.seenval('U') && parser.value_int()) CrealityDWIN.DWIN_UnLockScreen();
-  else CrealityDWIN.DWIN_LockScreen();
-}
+#if HAS_LOCKSCREEN
+  void CrealityDWINClass:: DWIN_C510() {
+    if (parser.seenval('U') && parser.value_int()) CrealityDWIN.DWIN_UnLockScreen();
+    else CrealityDWIN.DWIN_LockScreen();
+  }
+#endif
 
 #if DEBUG_DWIN
   void  CrealityDWINClass::DWIN_C997() {
@@ -6675,7 +6677,9 @@ void CrealityDWINClass:: DWIN_C510() {
 void  CrealityDWINClass::DWIN_Gcode(const int16_t codenum) {
   switch(codenum) {
     case 108: DWIN_C108(); break;           // Cancel a Wait for User without an Emergecy Parser
-    case 510: DWIN_C510(); break;           // lock screen
+    #if HAS_LOCKSCREEN
+      case 510: DWIN_C510(); break;           // lock screen
+    #endif
     #if DEBUG_DWIN
       case 997: DWIN_C997(); break;         // Simulate a printer freeze
     #endif
