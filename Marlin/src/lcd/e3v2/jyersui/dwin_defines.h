@@ -19,9 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-
-#ifndef __DWINDEFINES__
-#define __DWINDEFINES__
+#pragma once
 
 /**
  * DWIN general defines and data structs for PRO UI
@@ -39,11 +37,14 @@
 #define JYENHANCED 1 // Enable LCH-77 JYersUI Enhancements
 #define HAS_ESDIAG 1
 #define HAS_LOCKSCREEN 1
-#define HAS_HOSTACTION_MENUS 1
 #define HAS_PIDPLOT 1
 #define HAS_GCODE_PREVIEW 1
 //#define DEBUG_DWIN 1
 //#define NEED_HEX_PRINT 1
+
+#if ENABLED(HOST_ACTION_COMMANDS)
+  #define HAS_HOSTACTION_MENUS 1
+#endif
 
 #include "../../../core/types.h"
 #include "../common/dwin_color.h"
@@ -124,7 +125,7 @@ typedef struct {
     celsius_t hotend_levtemp = LEVELING_NOZZLE_TEMP;
     celsius_t bed_levtemp = LEVELING_BED_TEMP;
   #endif
-  #if ENABLED(HOST_ACTION_COMMANDS, HAS_HOSTACTION_MENUS)
+  #if HAS_HOSTACTION_MENUS
     uint64_t host_action_label_1 : 48;
     uint64_t host_action_label_2 : 48;
     uint64_t host_action_label_3 : 48;
@@ -161,8 +162,6 @@ typedef struct {
 
 static constexpr size_t eeprom_data_size = 96;
 extern eeprom_settings_t eeprom_settings;
-
-#endif // __DWINDEFINES__
 
 #if JYENHANCED
 

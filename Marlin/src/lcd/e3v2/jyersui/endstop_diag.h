@@ -22,20 +22,18 @@
 #pragma once
 
 /**
- * DWIN Single var plot
+ * DWIN End Stops diagnostic page
  * Author: Miguel A. Risco-Castillo
  * Version: 1.0
- * Date: 2022/01/30
+ * Date: 2021/11/06
  *
  * Modded for JYERSUI by LCH-77
  */
 
-#include "dwinui.h"
-
-class PlotClass {
+class ESDiagClass {
 public:
-  void Draw(frame_rect_t frame, float max, float ref = 0);
-  void Update(float value);
+  void Draw();
+  void Update();
 };
 
-extern PlotClass Plot;
+extern ESDiagClass ESDiag;
