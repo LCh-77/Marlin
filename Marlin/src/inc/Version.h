@@ -42,11 +42,7 @@
  * version was tagged.
  */
 #ifndef STRING_DISTRIBUTION_DATE
-<<<<<<< HEAD
-  #define STRING_DISTRIBUTION_DATE "2022-07-03"
-=======
-  #define STRING_DISTRIBUTION_DATE "2022-07-05"
->>>>>>> ed66845b03 ([cron] Bump distribution date (2022-07-05))
+  #define STRING_DISTRIBUTION_DATE "2022-07-06"
 #endif
 
 /**
