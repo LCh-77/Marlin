@@ -3933,7 +3933,6 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
               sprintf_P(row1, PSTR("%ix%ix%i"), eeprom_settings.x_bed_size, eeprom_settings.y_bed_size, eeprom_settings.z_max_pos);
               Draw_Menu_Item(INFO_SIZE, ICON_PrintSize, F(row1), nullptr, false, true);
             #else
-              #define MACHINE_SIZE STRINGIFY(X_BED_SIZE) "x" STRINGIFY(Y_BED_SIZE) "x" STRINGIFY(Z_MAX_POS)
               Draw_Menu_Item(INFO_SIZE, ICON_PrintSize, F(MACHINE_SIZE), nullptr, false, true);
             #endif
             Draw_Menu_Item(INFO_VERSION, ICON_Version, F(SHORT_BUILD_VERSION), nullptr, false, true);
