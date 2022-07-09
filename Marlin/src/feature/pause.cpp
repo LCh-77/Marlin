@@ -59,6 +59,8 @@
   #include "../lcd/extui/ui_api.h"
 #elif ENABLED(DWIN_LCD_PROUI)
   #include "../lcd/e3v2/proui/dwin.h"
+#elif ENABLED(DWIN_CREALITY_LCD_JYERSUI)
+  #include "../lcd/e3v2/jyersui/dwin.h"
 #endif
 
 #include "../lcd/marlinui.h"
@@ -281,7 +283,7 @@ bool load_filament(const_float_t slow_load_length/*=0*/, const_float_t fast_load
           // Show "Purge More" / "Resume" menu and wait for reply
           KEEPALIVE_STATE(PAUSED_FOR_USER);
           wait_for_user = false;
-          #if EITHER(HAS_MARLINUI_MENU, DWIN_LCD_PROUI)
+          #if ANY(HAS_MARLINUI_MENU, DWIN_CREALITY_LCD_JYERSUI, DWIN_LCD_PROUI)
             ui.pause_show_message(PAUSE_MESSAGE_OPTION); // Also sets PAUSE_RESPONSE_WAIT_FOR
           #else
             pause_menu_response = PAUSE_RESPONSE_WAIT_FOR;
@@ -552,6 +554,8 @@ void wait_for_confirmation(const bool is_reload/*=false*/, const int8_t max_beep
 
       TERN_(DWIN_LCD_PROUI, LCD_MESSAGE(MSG_REHEATING));
 
+      TERN_(DWIN_CREALITY_LCD_JYERSUI, LCD_MESSAGE(MSG_REHEATING));
+
       // Re-enable the heaters if they timed out
       HOTEND_LOOP() thermalManager.reset_hotend_idle_timer(e);
 
@@ -569,6 +573,7 @@ void wait_for_confirmation(const bool is_reload/*=false*/, const int8_t max_beep
       TERN_(HOST_PROMPT_SUPPORT, hostui.prompt_do(PROMPT_USER_CONTINUE, GET_TEXT_F(MSG_REHEATDONE), FPSTR(CONTINUE_STR)));
       TERN_(EXTENSIBLE_UI, ExtUI::onUserConfirmRequired(GET_TEXT_F(MSG_REHEATDONE)));
       TERN_(DWIN_LCD_PROUI, LCD_MESSAGE(MSG_REHEATDONE));
+      TERN_(DWIN_CREALITY_LCD_JYERSUI, LCD_MESSAGE(MSG_REHEATDONE));
 
       IF_DISABLED(PAUSE_REHEAT_FAST_RESUME, wait_for_user = true);
 
