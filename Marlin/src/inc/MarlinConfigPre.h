@@ -60,3 +60,8 @@
 #ifndef __MARLIN_DEPS__
   #include HAL_PATH(../HAL, inc/Conditionals_adv.h)
 #endif
+
+// JYersUI Enhanced special definition file
+#if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
+  #include "../lcd/e3v2/jyersui/dwin_defines.h"
+#endif

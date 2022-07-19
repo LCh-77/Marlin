@@ -732,7 +732,7 @@ float Probe::run_z_probe(const bool sanity_check/*=true*/) {
     // Raise to give the probe clearance
     do_blocking_move_to_z(current_position.z + Z_CLEARANCE_MULTI_PROBE, z_probe_fast_mm_s);
 
-  #elif Z_PROBE_FEEDRATE_FAST != Z_PROBE_FEEDRATE_SLOW
+  #elif  TERN(JYENHANCED, 1, Z_PROBE_FEEDRATE_FAST != Z_PROBE_FEEDRATE_SLOW)
 
     // If the nozzle is well over the travel height then
     // move down quickly before doing the slow probe

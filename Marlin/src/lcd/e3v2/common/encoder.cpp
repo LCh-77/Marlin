@@ -90,15 +90,9 @@ EncoderState Encoder_ReceiveAnalyze() {
         //LED_Action();
       #endif
       if (!ui.backlight) ui.refresh_brightness();
-      else {
-        #if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
-          return ENCODER_DIFF_ENTER;
-        #else
-          const bool was_waiting = wait_for_user;
-          wait_for_user = false;
-          return was_waiting ? ENCODER_DIFF_NO : ENCODER_DIFF_ENTER;
-        #endif
-      }
+      const bool was_waiting = wait_for_user;
+      wait_for_user = false;
+      return was_waiting ? ENCODER_DIFF_NO : ENCODER_DIFF_ENTER;
     }
     else return ENCODER_DIFF_NO;
   }

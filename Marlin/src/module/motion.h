@@ -66,7 +66,11 @@ extern xyz_pos_t cartes;
 #endif
 
 #if HAS_BED_PROBE
-  constexpr feedRate_t z_probe_fast_mm_s = MMM_TO_MMS(Z_PROBE_FEEDRATE_FAST);
+  #if JYENHANCED
+    extern feedRate_t z_probe_fast_mm_s;
+  #else
+    constexpr feedRate_t z_probe_fast_mm_s = MMM_TO_MMS(Z_PROBE_FEEDRATE_FAST);
+  #endif
 #endif
 
 /**

@@ -133,7 +133,7 @@ uint16_t W25QXXFlash::W25QXX_ReadID(void) {
   return Temp;
 }
 
-void W25QXXFlash::SPI_FLASH_WriteEnable() {
+void W25QXXFlash::SPI_FLASH_WriteEnable(void) {
   // Select the FLASH: Chip Select low
   SPI_FLASH_CS_L();
   // Send "Write Enable" instruction
@@ -151,7 +151,7 @@ void W25QXXFlash::SPI_FLASH_WriteEnable() {
 * Output         : None
 * Return         : None
 *******************************************************************************/
-void W25QXXFlash::SPI_FLASH_WaitForWriteEnd() {
+void W25QXXFlash::SPI_FLASH_WaitForWriteEnd(void) {
   uint8_t FLASH_Status = 0;
 
   // Select the FLASH: Chip Select low
@@ -216,7 +216,7 @@ void W25QXXFlash::SPI_FLASH_BlockErase(uint32_t BlockAddr) {
 * Output         : None
 * Return         : None
 *******************************************************************************/
-void W25QXXFlash::SPI_FLASH_BulkErase() {
+void W25QXXFlash::SPI_FLASH_BulkErase(void) {
   // Send write enable instruction
   SPI_FLASH_WriteEnable();
 

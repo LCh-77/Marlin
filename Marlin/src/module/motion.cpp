@@ -134,6 +134,10 @@ int16_t feedrate_percentage = 100;
 // Cartesian conversion result goes here:
 xyz_pos_t cartes;
 
+#if BOTH(HAS_BED_PROBE, JYENHANCED)
+  feedRate_t z_probe_fast_mm_s = MMM_TO_MMS(Z_PROBE_FEEDRATE_FAST);
+#endif
+
 #if IS_KINEMATIC
 
   abce_pos_t delta;

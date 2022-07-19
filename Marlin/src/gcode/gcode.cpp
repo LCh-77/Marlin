@@ -71,6 +71,10 @@ GcodeSuite gcode;
 
 #include "../MarlinCore.h" // for idle, kill
 
+#if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
+  #include "../lcd/e3v2/jyersui/dwin.h"
+#endif
+
 // Inactivity shutdown
 millis_t GcodeSuite::previous_move_ms = 0,
          GcodeSuite::max_inactive_time = 0;
@@ -1095,6 +1099,10 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
 
     #if ENABLED(REALTIME_REPORTING_COMMANDS)
       case 'S': case 'P': case 'R': break;                        // Invalid S, P, R commands already filtered
+    #endif
+
+    #if ENABLED(DWIN_CREALITY_LCD_JYERSUI)
+      case 'C' : CrealityDWIN.DWIN_Gcode(parser.codenum); break;               // JyersUI Cn: Custom Gcodes
     #endif
 
     default:

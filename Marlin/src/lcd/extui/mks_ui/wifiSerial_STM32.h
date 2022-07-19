@@ -39,17 +39,17 @@ class WifiSerial {
     void begin(uint32_t baud);
     void begin(uint32_t baud, uint8_t config);
     void end();
-    int available();
-    int read();
+    int available(void);
+    int read(void);
     int write(uint8_t);
 
     // Interrupt handlers
     static int _tx_complete_irq(serial_t *obj);
     static void _rx_complete_irq(serial_t *obj);
 
-    void flush();
-    bool isHalfDuplex() const;
-    void enableHalfDuplexRx();
+    void flush(void);
+    bool isHalfDuplex(void) const;
+    void enableHalfDuplexRx(void);
 
   private:
     void setRx(uint32_t _rx);
