@@ -34,6 +34,10 @@
 
 #include "../../../inc/MarlinConfigPre.h"
 
+#if DISABLED(DWIN_CREALITY_LCD_JYERSUI)
+  #error "Enhanced JYers firmware requires enabling DWIN_CREALITY_LCD_JYERSUI in the Configuration.h file" 
+#endif
+
 #define JYENHANCED 1 // Enable LCH-77 JYersUI Enhancements
 #define HAS_ESDIAG 1
 #define HAS_LOCKSCREEN 1
