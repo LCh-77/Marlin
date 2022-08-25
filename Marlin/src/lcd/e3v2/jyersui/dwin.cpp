@@ -809,8 +809,6 @@ void CrealityDWINClass::Draw_Print_ProgressElapsed() {
 }
 
 void CrealityDWINClass::Draw_PrintDone_confirm() {
-  process = Confirm;
-  popup = Complete;
   if (TERN0(HAS_GCODE_PREVIEW, Preview_Valid())) {
     Clear_Screen();
     Draw_Title(GET_TEXT(MSG_PRINT_DONE));
@@ -824,6 +822,8 @@ void CrealityDWINClass::Draw_PrintDone_confirm() {
     DWIN_Draw_Rectangle(0, GetColor(eeprom_settings.highlight_box, Def_Highlight_Color), 86, 282, 187, 321);
     DWIN_Draw_Rectangle(0, GetColor(eeprom_settings.highlight_box, Def_Highlight_Color), 85, 281, 188, 322);
   }
+  process = Confirm;
+  popup = Complete;
 }
 
 void CrealityDWINClass::Draw_SD_Item(uint8_t item, uint8_t row) {
