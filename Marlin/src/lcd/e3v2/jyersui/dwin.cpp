@@ -6414,7 +6414,7 @@ void CrealityDWINClass::Reset_Settings() {
     eeprom_settings.Invert_E0 = DEF_INVERT_E0_DIR;
     DWIN_Invert_E0();
     #if ENABLED(NOZZLE_PARK_FEATURE)
-      eeprom_settings.Park_point = xyz_int_t DEF_NOZZLE_PARK_POINT;
+      eeprom_settings.Park_point = DEF_NOZZLE_PARK_POINT;
     #endif
     eeprom_settings.x_bed_size = DEF_X_BED_SIZE;
     eeprom_settings.y_bed_size = DEF_Y_BED_SIZE;
